@@ -25,5 +25,25 @@
 #define MILDABUS_H
 #include <mbed.h>
 
-void mildabus_prepare();
+#define MASTER_ADDRESS 0x22
+typedef enum MB_Error_Struct{
+    MB_BUS_ERROR,
+    MB_TRANSMIT_ERROR,
+    MB_RECEIVE_ERROR,
+    MB_ADRESS_COLLISION_ERROR
+} MB_Error_TypeDef;
+
+class mildabus
+{
+private:
+    bool master_mode;
+public:
+    mildabus(CAN_TypeDef can, bool master = false, uint32_t adress = 0x99);
+    void prepare(void);
+    uint32_t register_self(uint32_t adress = 0x99);
+    void transmit(uint32_t dest, uint8_t *data, int length);
+    uint8_t &receive(int length = 1);
+    void raise_exeption(MB_Error_TypeDef e);
+};
+
 #endif

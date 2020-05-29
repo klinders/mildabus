@@ -25,6 +25,26 @@
 #include "can.h"
 #include <mbed.h>
 
-void mildabus_prepare(void){
+/**
+ * @brief Construct a new mildabus::mildabus object
+ * 
+ * @param can mbed CAN bus interface used to initialize MildaBus
+ * @param master Defines this device as the MildBus Master node (adress field will be overruled)
+ * @param adress override with own adress [0x0000 default]
+ */
+mildabus::mildabus(CAN_TypeDef can, bool master = false, uint32_t adress = 0x0000)
+{
 
+}
+
+/**
+ * @brief Prepare the mildabus for operation
+ * 
+ */
+void mildabus::prepare(void){
+    // We need to:
+    //// Setup the CAN Bus
+    //// Check for module ID
+    //// Request module ID if applicable
+    //// 
 }
