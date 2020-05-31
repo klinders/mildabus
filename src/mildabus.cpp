@@ -32,9 +32,9 @@
  * @param master Defines this device as the MildBus Master node (adress field will be overruled)
  * @param adress override with own adress [0x0000 default]
  */
-mildabus::mildabus(CAN_TypeDef can, bool master = false, uint32_t adress = 0x0000)
+mildabus::mildabus(CAN_TypeDef can, bool master, uint32_t adress)
 {
-
+    CAN can1();
 }
 
 /**

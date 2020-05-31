@@ -38,7 +38,7 @@ class mildabus
 private:
     bool master_mode;
 public:
-    mildabus(CAN_TypeDef can, bool master = false, uint32_t adress = 0x99);
+    mildabus(CAN_TypeDef can, bool master = false, uint32_t adress = 0x0000);
     void prepare(void);
     uint32_t register_self(uint32_t adress = 0x99);
     void transmit(uint32_t dest, uint8_t *data, int length);
