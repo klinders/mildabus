@@ -22,36 +22,41 @@
  * SOFTWARE.
  */
 #include "Mildabus.h"
+#include "exceptions.h"
 #include <mbed.h>
+
+// Device Unique ID
+uint32_t *uid = (uint32_t *)UID_BASE;
+void can_handler(void);
 
 /**
  * @brief Construct a new mildabus::mildabus object
  * 
  * @param can mbed CAN bus interface used to initialize MildaBus
- * @param master Defines this device as the MildBus Master node (adress field will be overruled)
- * @param adress override with own adress [0x0000 default]
+ * @param master Defines this device as the MildBus Master node (address field will be overruled)
+ * @param address override with own address [0x0000 default]
  */
-Mildabus::Mildabus(CAN& can, bool master, uint16_t adress)
+Mildabus::Mildabus(CAN* can_o, bool master, uint16_t address):can(*can_o)
 {
-    if(!can.frequency(500000)){
-        Mildabus::raise_exeption(MB_CLOCK_ERROR);
+    if(!Mildabus::can.frequency(500000)){
+        Mildabus::raise_exception(MB_CLOCK_ERROR);
         return;
     }
     
-    if(!can.mode(CAN::Normal)){
-        Mildabus::raise_exeption(MB_BUS_ERROR);
+    if(!Mildabus::can.mode(CAN::Normal)){
+        Mildabus::raise_exception(MB_BUS_ERROR);
         return;
-    }
-    
-    Mildabus::master_mode = master;
-    
-    if(!adress){
-        adress = MASTER_ADDRESS;
     }
 
-    Mildabus::set_adress(adress);
+    Mildabus::device_id = ((uid[0]^uid[1])^uid[2])&0x0FFFFFFF; // Xor to randomize and truncate 4 bits
+
+    if(master)
+        Mildabus::set_address(MASTER_ADDRESS);
+    else if(address)
+        Mildabus::set_address(address);
     
-    can.reset();
+    Mildabus::master_mode = master;
+
 }
 
 /**
@@ -65,28 +70,59 @@ bool Mildabus::prepare(void){
     //// Check for module ID
     //// Request module ID if applicable
     //// 
-}
+    
+    Mildabus::can.reset();
 
-/**
- * @brief Set the Mildabus adress manually.
- * 
- * @param adress for the module
- * @return true success
- * @return false error
- */
-bool Mildabus::set_adress(uint16_t adress){
-    if(!adress) return false;
-    if(Mildabus::master_mode && adress != MASTER_ADDRESS) {
-        Mildabus::raise_exception(MB_CONFIG_ERROR);
-        return false;
-    }
+    if(!Mildabus::address)
+        Mildabus::request_address(true); // Request and block
 
-    Mildabus::adress = adress;
+    Mildabus::can.attach(Callback<void(void)>(Mildabus::can_rx_handler), CAN::RxIrq); // Received
+    Mildabus::can.attach(Callback<void(void)>(Mildabus::can_tx_handler), CAN::TxIrq); // Transmitted or aborted
+    Mildabus::can.attach(Callback<void(void)>(Mildabus::can_wu_handler), CAN::WuIrq); // Wake Up
+
     return true;
 }
 
 /**
- * @brief 
+ * @brief Set the Mildabus address manually.
+ * 
+ * @param address for the module
+ * @return true success
+ * @return false error
+ */
+bool Mildabus::set_address(uint16_t address){
+    if(!address) return false;
+    if(Mildabus::master_mode && address != MASTER_ADDRESS) {
+        Mildabus::raise_exception(MB_CONFIG_ERROR);
+        return false;
+    }
+
+    Mildabus::address = address;
+    return true;
+}
+
+uint16_t Mildabus::request_address(bool blocking){
+    const char data[] = {0x22, 0x22};
+    CANMessage tx_msg(Mildabus::device_id, data, 1, CANData, CANExtended);
+    Mildabus::can.write(tx_msg);
+
+    CANMessage rx_msg;
+    // Block until the 
+    while(1){
+        if(Mildabus::can.read(rx_msg, 0)){
+            if(rx_msg.id == Mildabus::device_id && rx_msg.data[0] == ASSIGN_ADDRESS){
+                Mildabus::address = rx_msg.data[1];
+                uint8_t cnf_data[] = {ADDRESS_CONFIRM};
+                Mildabus::transmit(DESTINATION_ALL, cnf_data, 1);
+                break;
+            }
+        }
+    }
+    return Mildabus::address;
+}
+
+/**
+ * @private Raise an mildabus exception. Will be transmitted if the bus is active.
  * 
  * @param e @ref MB_Error_Type 
  */
@@ -108,4 +144,20 @@ void Mildabus::raise_exception(MB_Error_Type e){
         // Roll over
         Mildabus::error_count = 0;
     }
+}
+
+bool Mildabus::transmit_exceptions(void){
+    // Nothing yet
+}
+
+void Mildabus::can_rx_handler(void){
+
+}
+
+void Mildabus::can_tx_handler(void){
+
+}
+
+void Mildabus::can_wu_handler(void){
+
 }
