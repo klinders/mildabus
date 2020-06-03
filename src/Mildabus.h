@@ -24,7 +24,9 @@
 #ifndef MILDABUS_H
 #define MILDABUS_H
 #include <mbed.h>
-#include "exceptions.h"
+#include "Error.h"
+#include "Message.h"
+#include "Filter.h"
 
 #define MASTER_ADDRESS 0x22
 #define ASSIGN_ADDRESS 0x02
@@ -45,7 +47,7 @@ private:
 
     void raise_exception(MB_Error_Type e);
     bool transmit_exceptions(void);
-    uint16_t request_address(bool blocking);
+    void request_address(bool blocking);
 public:
     /**
      * @brief Construct a new Mildabus object
@@ -58,9 +60,10 @@ public:
     bool prepare(void);
     bool set_address(uint16_t a);
     uint32_t register_self(void);
-    bool transmit(uint16_t dest, uint8_t *data, int length);
-    static void can_rx_handler(void);
-    static void can_tx_handler(void);
-    static void can_wu_handler(void);
+    bool write(MB_Message message);
+    bool read(MB_Message &message, MB_Filter filter = MB_FILTER_NONE);
+    void can_rx_handler(void);
+    void can_tx_handler(void);
+    void can_wu_handler(void);
 };
 #endif

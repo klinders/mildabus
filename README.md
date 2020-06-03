@@ -7,10 +7,12 @@ The project is build upon Mbed-OS.
 
 ## Usage
 ```C++
+#import <mbed.h>
 #import <Mildabus.h>
-
-CAN my_can_interface(PIN_RX, PIN_TX); // Create a can interface using the MBED CAN Class
-Mildabus my_mildabus(my_can_interface [, MASTER] [, ADDRESS]) // Create a Mildabus and pass the MBED CAN operator.   
+// Create a can interface using the MBED CAN Class
+CAN my_can_interface(PIN_RX, PIN_TX);
+// Create a Mildabus and pass the MBED CAN operator. 
+Mildabus my_mildabus(my_can_interface [, MASTER] [, ADDRESS]);  
 
 ```
 

@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 #include "Mildabus.h"
-#include "exceptions.h"
 #include <mbed.h>
 
 // Device Unique ID
@@ -48,13 +47,13 @@ Mildabus::Mildabus(CAN* can_o, bool master, uint16_t address):can(*can_o)
         return;
     }
 
-    Mildabus::device_id = ((uid[0]^uid[1])^uid[2])&0x0FFFFFFF; // Xor to randomize and truncate 4 bits
+    Mildabus::device_id = ((uid[0]^uid[1])^uid[2])&0x0FFFFFFF; // Xor to join and truncate 4 bits
 
-    if(master)
+    if(master){
         Mildabus::set_address(MASTER_ADDRESS);
-    else if(address)
+    }else if(address){
         Mildabus::set_address(address);
-    
+    }
     Mildabus::master_mode = master;
 
 }
@@ -76,9 +75,9 @@ bool Mildabus::prepare(void){
     if(!Mildabus::address)
         Mildabus::request_address(true); // Request and block
 
-    Mildabus::can.attach(Callback<void(void)>(Mildabus::can_rx_handler), CAN::RxIrq); // Received
-    Mildabus::can.attach(Callback<void(void)>(Mildabus::can_tx_handler), CAN::TxIrq); // Transmitted or aborted
-    Mildabus::can.attach(Callback<void(void)>(Mildabus::can_wu_handler), CAN::WuIrq); // Wake Up
+    Mildabus::can.attach(callback(this, &Mildabus::can_rx_handler), CAN::RxIrq); // Received
+    Mildabus::can.attach(callback(this, &Mildabus::can_tx_handler), CAN::TxIrq); // Transmitted or aborted
+    Mildabus::can.attach(callback(this, &Mildabus::can_wu_handler), CAN::WuIrq); // Wake Up
 
     return true;
 }
@@ -101,24 +100,18 @@ bool Mildabus::set_address(uint16_t address){
     return true;
 }
 
-uint16_t Mildabus::request_address(bool blocking){
-    const char data[] = {0x22, 0x22};
-    CANMessage tx_msg(Mildabus::device_id, data, 1, CANData, CANExtended);
+void Mildabus::request_address(bool blocking){
+
+    // Request ID is 28 bits long with a leading 1. This ID will be reflected by the master.
+    uint32_t request_id = Mildabus::device_id + (1<<28);
+    uint8_t data[] = {0x00}; // An empty data field
+    CANMessage tx_msg(request_id, data, 1, CANData, CANExtended);
     Mildabus::can.write(tx_msg);
 
-    CANMessage rx_msg;
-    // Block until the 
-    while(1){
-        if(Mildabus::can.read(rx_msg, 0)){
-            if(rx_msg.id == Mildabus::device_id && rx_msg.data[0] == ASSIGN_ADDRESS){
-                Mildabus::address = rx_msg.data[1];
-                uint8_t cnf_data[] = {ADDRESS_CONFIRM};
-                Mildabus::transmit(DESTINATION_ALL, cnf_data, 1);
-                break;
-            }
-        }
-    }
-    return Mildabus::address;
+    Mildabus::address = 0;
+
+    // Block until the address is filled
+    if(blocking) while(!Mildabus::address);
 }
 
 /**
@@ -146,12 +139,34 @@ void Mildabus::raise_exception(MB_Error_Type e){
     }
 }
 
+bool Mildabus::write(MB_Message message){
+    return true;
+}
+
+bool Mildabus::read(MB_Message &message, MB_Filter filter){
+    int handle = 0;
+
+    if(filter != MB_FILTER_NONE){
+        // TBD
+    }
+
+    CANMessage can_mes;
+
+    if(!Mildabus::can.read(can_mes, handle)) return false;
+
+    message.parseCAN(can_mes);
+    
+    return true;
+}
+
 bool Mildabus::transmit_exceptions(void){
     // Nothing yet
+    return true;
 }
 
 void Mildabus::can_rx_handler(void){
-
+    MB_Message message;
+    if(Mildabus::read(message))
 }
 
 void Mildabus::can_tx_handler(void){
