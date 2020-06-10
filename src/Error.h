@@ -30,13 +30,13 @@
  * @typedef MB_Error_Type
  * 
  */
-typedef enum mb_error_type{
-    MB_BUS_ERROR,               /*! MB_BUS_ERROR */
-    MB_CLOCK_ERROR,             /*! MB_CLOCK_ERROR */
-    MB_TRANSMIT_ERROR,          /*! MB_TRANSMIT_ERROR */
-    MB_RECEIVE_ERROR,           /*! MB_BUS_ERROR */
-    MB_ADDRESS_COLLISION_ERROR,  /*! MB_ADDRESS_COLLISION_ERROR */
-    MB_CONFIG_ERROR             /*! MB_CONFIG_ERROR */
+typedef enum mb_error_type:uint8_t{
+    MB_BUS_ERROR = 0x00,                    /*! MB_BUS_ERROR */
+    MB_CLOCK_ERROR = 0x01,                  /*! MB_CLOCK_ERROR */
+    MB_TRANSMIT_ERROR = 0x02,               /*! MB_TRANSMIT_ERROR */
+    MB_RECEIVE_ERROR = 0x03,                /*! MB_BUS_ERROR */
+    MB_ADDRESS_COLLISION_ERROR = 0x04,      /*! MB_ADDRESS_COLLISION_ERROR */
+    MB_CONFIG_ERROR = 0x05                  /*! MB_CONFIG_ERROR */
 } MB_Error_Type;
 
 /**

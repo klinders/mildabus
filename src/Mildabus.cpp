@@ -47,7 +47,7 @@ Mildabus::Mildabus(CAN* can_o, bool master, uint16_t address):can(*can_o)
         return;
     }
 
-    Mildabus::device_id = ((uid[0]^uid[1])^uid[2])&0x0FFFFFFF; // Xor to join and truncate 4 bits
+    Mildabus::device_id = ((uid[0]^uid[1])^uid[2])&0x00FFFFFF; // Xor to join and truncate 4 bits
 
     if(master){
         Mildabus::set_address(MASTER_ADDRESS);
@@ -55,7 +55,6 @@ Mildabus::Mildabus(CAN* can_o, bool master, uint16_t address):can(*can_o)
         Mildabus::set_address(address);
     }
     Mildabus::master_mode = master;
-
 }
 
 /**
@@ -64,7 +63,7 @@ Mildabus::Mildabus(CAN* can_o, bool master, uint16_t address):can(*can_o)
  * @return true success
  * @return false error
  */
-bool Mildabus::prepare(void){
+bool Mildabus::getConnected(void){
     // We need to:
     //// Check for module ID
     //// Request module ID if applicable
@@ -89,10 +88,10 @@ bool Mildabus::prepare(void){
  * @return true success
  * @return false error
  */
-bool Mildabus::set_address(uint16_t address){
+bool Mildabus::setAddress(uint16_t address){
     if(!address) return false;
     if(Mildabus::master_mode && address != MASTER_ADDRESS) {
-        Mildabus::raise_exception(MB_CONFIG_ERROR);
+        Mildabus::raiseException(MB_CONFIG_ERROR);
         return false;
     }
 
@@ -100,16 +99,15 @@ bool Mildabus::set_address(uint16_t address){
     return true;
 }
 
-void Mildabus::request_address(bool blocking){
+void Mildabus::requestAddress(bool blocking){
+    MB_Message msg;
+    msg.m_type = MB_REQUEST_ID;
+    
 
-    // Request ID is 28 bits long with a leading 1. This ID will be reflected by the master.
-    uint32_t request_id = Mildabus::device_id + (1<<28);
-    uint8_t data[] = {0x00}; // An empty data field
-    CANMessage tx_msg(request_id, data, 1, CANData, CANExtended);
-    Mildabus::can.write(tx_msg);
-
+    // Reset the MB address if one is there.    
     Mildabus::address = 0;
 
+    Mildabus::send(msg);
     // Block until the address is filled
     if(blocking) while(!Mildabus::address);
 }
@@ -119,7 +117,7 @@ void Mildabus::request_address(bool blocking){
  * 
  * @param e @ref MB_Error_Type 
  */
-void Mildabus::raise_exception(MB_Error_Type e){
+void Mildabus::raiseException(MB_Error_Type e){
     MB_Error err;
     err.type = e;
     // TO DO: Setup systick/rtc
@@ -130,6 +128,8 @@ void Mildabus::raise_exception(MB_Error_Type e){
         Mildabus::transmit_exceptions();
     }
 
+    //Mildabus::can.filter();
+
     // Raise the counter
     if(Mildabus::error_count < 7) {
         Mildabus::error_count++;
@@ -139,7 +139,30 @@ void Mildabus::raise_exception(MB_Error_Type e){
     }
 }
 
-bool Mildabus::write(MB_Message message){
+bool Mildabus::write(MB_Message msg){
+    switch (msg.m_type)
+    {
+    case MB_REQUEST_ID:
+            // Request address message
+        msg.format = CANExtended;
+        msg.id = (MB_DCNF_RX << 25) | (Mildabus::device_id & 0x00FFFFFF);
+        msg.type = CANData;
+        Mildabus::can.write(msg);
+        break;
+    case MB_ERROR:
+        msg.format = CANStandard;
+        msg.id = (MB_EMCY << 7) | (Mildabus::address);
+        msg.type = CANData;
+        msg.data[0] = msg.error.type;
+        msg.data[1] = msg.error.time & 0x000000FF; // First portion
+        msg.data[2] = msg.error.time & 0x0000FF00; // Second
+        msg.data[3] = msg.error.time & 0x00FF0000; // third
+        msg.data[4] = msg.error.time & 0xFF000000; // fourth
+
+        Mildabus::can.write(msg);
+    default:
+        break;
+    }
     return true;
 }
 
@@ -150,11 +173,9 @@ bool Mildabus::read(MB_Message &message, MB_Filter filter){
         // TBD
     }
 
-    CANMessage can_mes;
+    MB_Message msg;
 
-    if(!Mildabus::can.read(can_mes, handle)) return false;
-
-    message.parseCAN(can_mes);
+    if(!Mildabus::can.read(msg, handle)) return false;
     
     return true;
 }
@@ -166,7 +187,9 @@ bool Mildabus::transmit_exceptions(void){
 
 void Mildabus::can_rx_handler(void){
     MB_Message message;
-    if(Mildabus::read(message))
+    if(Mildabus::read(message)){
+
+    }
 }
 
 void Mildabus::can_tx_handler(void){

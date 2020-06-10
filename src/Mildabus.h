@@ -27,10 +27,10 @@
 #include "Error.h"
 #include "Message.h"
 #include "Filter.h"
+#include "Subscriptions.h"
+#include "Devices.h"
 
 #define MASTER_ADDRESS 0x22
-#define ASSIGN_ADDRESS 0x02
-#define ADDRESS_CONFIRM 0x34
 #define DESTINATION_ALL 0x00
 
 class Mildabus
@@ -45,9 +45,11 @@ private:
     MB_Error error[8];
     uint32_t device_id;
 
-    void raise_exception(MB_Error_Type e);
     bool transmit_exceptions(void);
     void request_address(bool blocking);
+    void can_rx_handler(void);
+    void can_tx_handler(void);
+    void can_wu_handler(void);
 public:
     /**
      * @brief Construct a new Mildabus object
@@ -57,13 +59,13 @@ public:
      * @param address 
      */
     Mildabus(CAN* can_o, bool master = false, uint16_t address = 0x00);
-    bool prepare(void);
-    bool set_address(uint16_t a);
-    uint32_t register_self(void);
-    bool write(MB_Message message);
+    bool getConnected(void);
+    bool setAddress(uint16_t addr);
+    void raiseException(MB_Error_Type e);
+    bool send(MB_Message message);
     bool read(MB_Message &message, MB_Filter filter = MB_FILTER_NONE);
-    void can_rx_handler(void);
-    void can_tx_handler(void);
-    void can_wu_handler(void);
+
+    void subscribe(Callback<void(MB_Message)> callback, MB_Subscription_Type trigger, uint8_t device_id);
+    void subscribe(Callback<void(MB_Message)> callback, MB_Subscription_Type trigger, MB_Device_Type device_type = MB_ALL_DEV);
 };
 #endif

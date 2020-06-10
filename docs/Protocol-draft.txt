@@ -1,0 +1,53 @@
+Mildabus Protocol
+
+CAN bus header (No Extended ID):
+
+| SOF |      ID      | RTR | IDE | r |  DLF   |      DATA      |   CRC   | DEL | ACK | DEL |  EOF  | ITM |
+
+SF      - Start Of Frame                (1)
+ID      - Identifier                    (11 bit)
+RTR     - Remote Transmission Req.      (1 bit)
+IDE     - ID Extention                  (1 bit)
+r       - Reserved                      (1 bit)
+DLF     - Data Length Field             (4 bit)
+DATA    - Data                          (0 - 64 bit)
+CRC     - Cyclic Redundancy Check       (15 bit)
+DEL     - CRC Delimiter                 (1 bit)
+ACK     - Acknowledge                   (1 bit)
+DEL     - Acknowledge Delimiter         (1 bit)
+EOF     - End Of Frame                  (7 bit)
+ITM     - Intermission                  (3 bit)
+
+Mildabus ID Field definition:
+
+|  CFC   |      ID        |
+
+CFC     - Command Function Code         (4 bit)
+ID      - Node ID                       (7 bit)
+
+CFC list:
+
+NMT     - Network Management            0x0
+GFC     - Global Failsafe Command       0x1 -- (Not in use)
+SYNC    - Synchronisation command       0x2
+EMCY    - Emergency                     0x3
+TMSTP   - TimeStamp                     0x4
+EVENT   - Event message
+    EVENT_tx                            0x5
+    EVENT_rx                            0x6
+DATA    - Data message
+    DATA_tx                             0x7
+    DATA_rx                             0x8
+BLOCK   - Data Block message
+    BLOCK_tx                            0x9
+    BLOCK_rx                            0xA
+SYS     - Service Data Object
+    SDO_tx                              0xB
+    SDO_rx                              0xC
+HBT     - Heartbeat                     0xD
+DCNF    - Device Configure
+    DCNF_tx                             0xE
+    DCNF_rx                             oxF
+
+When using the DCNF commands ID field changes to a 24 bit Device Identifier. For this the CAN Extended ID field will be used.
+
