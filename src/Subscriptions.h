@@ -1,9 +1,18 @@
 #include <mbed.h>
+#include "Filter.h"
 
-enum MB_Subscription_Type {
-    MB_EVENT_SUB,
-    MB_DATA_SUB,
-    MB_ERROR_SUB,
-    MB_ALL_SUB
+class MB_Subscription{
+public:
+    enum Type {
+        MB_EVENT,
+        MB_DATA,
+        MB_ERROR,
+        MB_ALL
+    } type;
+    MB_Filter filter;
+
+public:
+    MB_Subscription(Type t = MB_ALL, MB_Filter f = MB_Filter()):filter(f){
+        type = t;
+    }
 };
-

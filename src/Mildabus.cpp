@@ -35,24 +35,24 @@ void can_handler(void);
  * @param master Defines this device as the MildBus Master node (address field will be overruled)
  * @param address override with own address [0x0000 default]
  */
-Mildabus::Mildabus(CAN* can_o, bool master, uint16_t address):can(*can_o)
+Mildabus::Mildabus(CAN* can_o, bool master = false, uint8_t address = 0x00):can(*can_o)
 {
     if(!Mildabus::can.frequency(500000)){
-        Mildabus::raise_exception(MB_CLOCK_ERROR);
+        Mildabus::raiseException(MB_Error::CLOCK_ERROR);
         return;
     }
     
     if(!Mildabus::can.mode(CAN::Normal)){
-        Mildabus::raise_exception(MB_BUS_ERROR);
+        Mildabus::raiseException(MB_Error::BUS_ERROR);
         return;
     }
 
     Mildabus::device_id = ((uid[0]^uid[1])^uid[2])&0x00FFFFFF; // Xor to join and truncate 4 bits
 
     if(master){
-        Mildabus::set_address(MASTER_ADDRESS);
+        Mildabus::setAddress(MASTER_ADDRESS);
     }else if(address){
-        Mildabus::set_address(address);
+        Mildabus::setAddress(address);
     }
     Mildabus::master_mode = master;
 }
@@ -71,9 +71,9 @@ bool Mildabus::getConnected(void){
     
     Mildabus::can.reset();
 
-    if(!Mildabus::address)
-        Mildabus::request_address(true); // Request and block
-
+    if(!Mildabus::address){
+        Mildabus::requestAddress(true); // Request and block
+    }
     Mildabus::can.attach(callback(this, &Mildabus::can_rx_handler), CAN::RxIrq); // Received
     Mildabus::can.attach(callback(this, &Mildabus::can_tx_handler), CAN::TxIrq); // Transmitted or aborted
     Mildabus::can.attach(callback(this, &Mildabus::can_wu_handler), CAN::WuIrq); // Wake Up
@@ -91,7 +91,7 @@ bool Mildabus::getConnected(void){
 bool Mildabus::setAddress(uint16_t address){
     if(!address) return false;
     if(Mildabus::master_mode && address != MASTER_ADDRESS) {
-        Mildabus::raiseException(MB_CONFIG_ERROR);
+        Mildabus::raiseException(MB_Error::CONFIG_ERROR);
         return false;
     }
 
@@ -101,7 +101,6 @@ bool Mildabus::setAddress(uint16_t address){
 
 void Mildabus::requestAddress(bool blocking){
     MB_Message msg;
-    msg.m_type = MB_REQUEST_ID;
     
 
     // Reset the MB address if one is there.    
@@ -117,7 +116,7 @@ void Mildabus::requestAddress(bool blocking){
  * 
  * @param e @ref MB_Error_Type 
  */
-void Mildabus::raiseException(MB_Error_Type e){
+void Mildabus::raiseException(MB_Error::Type e){
     MB_Error err;
     err.type = e;
     // TO DO: Setup systick/rtc
@@ -125,7 +124,7 @@ void Mildabus::raiseException(MB_Error_Type e){
     Mildabus::error[Mildabus::error_count] = err;
     // Transmit the fault if the bus is active
     if(Mildabus::active){
-        Mildabus::transmit_exceptions();
+        Mildabus::transmitExceptions();
     }
 
     //Mildabus::can.filter();
@@ -139,37 +138,14 @@ void Mildabus::raiseException(MB_Error_Type e){
     }
 }
 
-bool Mildabus::write(MB_Message msg){
-    switch (msg.m_type)
-    {
-    case MB_REQUEST_ID:
-            // Request address message
-        msg.format = CANExtended;
-        msg.id = (MB_DCNF_RX << 25) | (Mildabus::device_id & 0x00FFFFFF);
-        msg.type = CANData;
-        Mildabus::can.write(msg);
-        break;
-    case MB_ERROR:
-        msg.format = CANStandard;
-        msg.id = (MB_EMCY << 7) | (Mildabus::address);
-        msg.type = CANData;
-        msg.data[0] = msg.error.type;
-        msg.data[1] = msg.error.time & 0x000000FF; // First portion
-        msg.data[2] = msg.error.time & 0x0000FF00; // Second
-        msg.data[3] = msg.error.time & 0x00FF0000; // third
-        msg.data[4] = msg.error.time & 0xFF000000; // fourth
+bool Mildabus::send(MB_Message msg){
 
-        Mildabus::can.write(msg);
-    default:
-        break;
-    }
-    return true;
 }
 
 bool Mildabus::read(MB_Message &message, MB_Filter filter){
     int handle = 0;
 
-    if(filter != MB_FILTER_NONE){
+    if(filter.type != MB_Filter::FILTER_NONE){
         // TBD
     }
 
@@ -180,7 +156,7 @@ bool Mildabus::read(MB_Message &message, MB_Filter filter){
     return true;
 }
 
-bool Mildabus::transmit_exceptions(void){
+bool Mildabus::transmitExceptions(void){
     // Nothing yet
     return true;
 }

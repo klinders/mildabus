@@ -42,12 +42,35 @@ BLOCK   - Data Block message
     BLOCK_tx                            0x9
     BLOCK_rx                            0xA
 SYS     - Service Data Object
-    SDO_tx                              0xB
-    SDO_rx                              0xC
+    SYS_tx                              0xB
+    SYS_rx                              0xC
 HBT     - Heartbeat                     0xD
 DCNF    - Device Configure
     DCNF_tx                             0xE
-    DCNF_rx                             oxF
+    DCNF_rx                             0xF
 
 When using the DCNF commands ID field changes to a 24 bit Device Identifier. For this the CAN Extended ID field will be used.
 
+
+
+For the transmission of big data streams, the BLOCK data function can be used.
+A block stream is requested via a BLOCK_rx command. The first CAN message contains
+the Start request [0xA4], the requested data field pointer and the BLOCK size. The server node now returns
+a Start response [0xC2], the same requested data field pointer and the actual transmit size. The client now
+transmits a Start BLOCK [0xA3] indicating the device is ready for reception. The server node transmits the 
+data blocks and counts up towards the last segment. (up to 127 segments are supported.).
+The server node indicates the last segment and the amount of remaining bytes in it [0x85].
+The client node confirms [0xA2] and returns the amount of bytes received. Then the server sends a BLOCK Transfer End 
+message which the client Acknowledges with a BLOCK Transfer Terminate message [0xA1].
+
+Block Data example:
+A4 08 10 00 21 00 00 00   // Start req: Read [1008], Blocksize 33
+C2 08 10 00 1A 00 00 00   // Start resp: Size is 26 bytes
+A3 00 00 00 00 00 00 00   // Start blok req: Let's go
+01 54 69 6E 79 20 6F 4E   // Upload blok resp: Segment = 1
+02 64 65 20 2D 20 4D 65   // Upload blok resp: Segment = 2
+03 67 61 20 44 6F 6D 61   // Upload blok resp: Segment = 3
+85 69 6E 73 20 21 00 00   // Last segment: 5 bytes remaining
+A2 04 1A 00 00 00 00 00   // Upload blok req: 4 segments, 26 bytes received
+C9 00 00 00 00 00 00 00   // End resp
+A1 00 00 00 00 00 00 00   // End req: Thanks!

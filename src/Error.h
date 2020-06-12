@@ -24,29 +24,21 @@
 #ifndef MB_EXCEPTIONS_H
 #define MB_EXCEPTIONS_H
 
-#include <stdint.h>
-
-/**
- * @typedef MB_Error_Type
- * 
- */
-typedef enum mb_error_type:uint8_t{
-    MB_BUS_ERROR = 0x00,                    /*! MB_BUS_ERROR */
-    MB_CLOCK_ERROR = 0x01,                  /*! MB_CLOCK_ERROR */
-    MB_TRANSMIT_ERROR = 0x02,               /*! MB_TRANSMIT_ERROR */
-    MB_RECEIVE_ERROR = 0x03,                /*! MB_BUS_ERROR */
-    MB_ADDRESS_COLLISION_ERROR = 0x04,      /*! MB_ADDRESS_COLLISION_ERROR */
-    MB_CONFIG_ERROR = 0x05                  /*! MB_CONFIG_ERROR */
-} MB_Error_Type;
-
 /**
  * @typedef MB_Error
  * 
  */
-typedef struct mb_error_struct{
-    MB_Error_Type type;         /*! MB_Error_Type */
+struct MB_Error{
+    enum Type{
+        BUS_ERROR = 0x00,                    /*! MB_BUS_ERROR */
+        CLOCK_ERROR = 0x01,                  /*! MB_CLOCK_ERROR */
+        TRANSMIT_ERROR = 0x02,               /*! MB_TRANSMIT_ERROR */
+        RECEIVE_ERROR = 0x03,                /*! MB_BUS_ERROR */
+        ADDRESS_COLLISION_ERROR = 0x04,      /*! MB_ADDRESS_COLLISION_ERROR */
+        CONFIG_ERROR = 0x05                  /*! MB_CONFIG_ERROR */
+    } type;
     uint32_t time;              /*! Current time */
     bool transmitted;           /*! Error has been transmitted on the bus */
-} MB_Error;
+};
 
 #endif

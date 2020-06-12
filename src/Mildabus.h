@@ -28,10 +28,8 @@
 #include "Message.h"
 #include "Filter.h"
 #include "Subscriptions.h"
+#include "list"
 #include "Devices.h"
-
-#define MASTER_ADDRESS 0x22
-#define DESTINATION_ALL 0x00
 
 class Mildabus
 {
@@ -39,14 +37,18 @@ private:
     CAN& can;
     bool master_mode;
     bool active;
-    uint32_t address;
+    uint8_t address;
+
+    // Subscriptions linked list
+    std::list<MB_Subscription> subsciption_list;
+
     // Error Management (max 8 exceptions are saved )
     uint8_t error_count;
     MB_Error error[8];
     uint32_t device_id;
 
-    bool transmit_exceptions(void);
-    void request_address(bool blocking);
+    bool transmitExceptions(void);
+    void requestAddress(bool blocking);
     void can_rx_handler(void);
     void can_tx_handler(void);
     void can_wu_handler(void);
@@ -58,14 +60,23 @@ public:
      * @param master 
      * @param address 
      */
-    Mildabus(CAN* can_o, bool master = false, uint16_t address = 0x00);
+    Mildabus(CAN* can_o, bool master = false, uint8_t address = 0x00);
+    ~Mildabus();
     bool getConnected(void);
     bool setAddress(uint16_t addr);
-    void raiseException(MB_Error_Type e);
+    void raiseException(MB_Error::Type e);
     bool send(MB_Message message);
-    bool read(MB_Message &message, MB_Filter filter = MB_FILTER_NONE);
+    bool read(MB_Message &message, MB_Filter filter = MB_Filter());
 
-    void subscribe(Callback<void(MB_Message)> callback, MB_Subscription_Type trigger, uint8_t device_id);
-    void subscribe(Callback<void(MB_Message)> callback, MB_Subscription_Type trigger, MB_Device_Type device_type = MB_ALL_DEV);
+    std::list<MB_Subscription>& getSubscriptions(void);
+    void subscribe(Callback<void(MB_Message)> callback, MB_Subscription::Type trigger, MB_Filter = MB_Filter());
+    void unsubscribe();
+
+    uint8_t getAddress(void) const{return address;};
+    uint8_t getErrorCount(void) const{return error_count;};
+    uint32_t getDeviceID(void) const{return device_id;};
+    const MB_Error* const getErrors(void) const{return error;};
+    bool isActive(void) const{return active;};
+    bool isMaster(void) const{return master_mode;};
 };
 #endif
