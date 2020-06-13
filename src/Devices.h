@@ -1,3 +1,5 @@
+#ifndef MB_DEVICES_H
+#define MB_DEVICES_H
 
 enum MB_Device_Type {
     MB_ALL_DEV = 0x00,
@@ -15,3 +17,4 @@ enum MB_Device_Type {
     MB_KEYPAD_DEV = 0x0B,
     MB_UNKOWN_DEV = 0xFF
 };
+#endif

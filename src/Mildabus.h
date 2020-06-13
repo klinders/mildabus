@@ -40,7 +40,7 @@ private:
     uint8_t address;
 
     // Subscriptions linked list
-    std::list<MB_Subscription> subsciption_list;
+    std::list<MB_Subscription> subsciption_list[sizeof(MB_Subscription::Type)/sizeof(MB_Subscription::MB_ALL)];
 
     // Error Management (max 8 exceptions are saved )
     uint8_t error_count;
@@ -65,12 +65,12 @@ public:
     bool getConnected(void);
     bool setAddress(uint16_t addr);
     void raiseException(MB_Error::Type e);
-    bool send(MB_Message message);
-    bool read(MB_Message &message, MB_Filter filter = MB_Filter());
+    bool send(MB_Message);
+    bool read(MB_Message&, MB_Filter);
 
     std::list<MB_Subscription>& getSubscriptions(void);
-    void subscribe(Callback<void(MB_Message)> callback, MB_Subscription::Type trigger, MB_Filter = MB_Filter());
-    void unsubscribe();
+    void subscribe(Callback<void(MB_Message)>, MB_Subscription::Type, MB_Filter = MB_Filter());
+    void unsubscribe(MB_Subscription&);
 
     uint8_t getAddress(void) const{return address;};
     uint8_t getErrorCount(void) const{return error_count;};
@@ -78,5 +78,9 @@ public:
     const MB_Error* const getErrors(void) const{return error;};
     bool isActive(void) const{return active;};
     bool isMaster(void) const{return master_mode;};
+
+    // Subscriptions for the bare functions
+    void nmtHandler(MB_Message m);
+    void dcnfHandler(MB_Message m);
 };
 #endif

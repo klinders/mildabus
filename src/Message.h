@@ -1,3 +1,6 @@
+#ifndef MB_MESSAGE_H
+#define MB_MESSAGE_H
+
 #include "Error.h"
 #include "mbed.h"
 
@@ -54,3 +57,4 @@ public:
     uint8_t getFrom(void) const{return from;};
     bool isIncomming(void) const{return incomming;};
 };
+#endif
