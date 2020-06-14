@@ -10,6 +10,15 @@
 #define MASTER_ADDRESS 0x22
 #define DESTINATION_ALL 0x00
 
+/* define other things */
+#define NODE_ID_MASK    0b00001111111                       // Mask for the node ID
+#define DEVICE_ID_MASK  0b00001111111111111111111111111     // Mask for the Device ID
+#define FUNCTION_MASK   0b1111                              // Mask for the function code
+
+#define FUNCTION_CODE(ID)   (ID&FUNCTION_MASK)              // Macro to define function code
+#define DEVICE_ID(ID)       (ID&DEVICE_ID_MASK)             // Macro to define device id
+#define NODE_ID(ID)         (ID&NODE_ID_MASK)               // Macro to define node id
+
 /**
  * @brief Mildabus Message Object (extends mbed::CANMessage)
  * 

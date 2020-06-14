@@ -52,7 +52,7 @@ private:
     uint8_t address;
 
     // Subscriptions linked list
-    std::list<MB_Subscription> subscription_list[sizeof(MB_Subscription::Type)/sizeof(MB_Subscription::ALL)];
+    std::list<MB_Subscription*> subscription_list[sizeof(MB_Subscription::Type)/sizeof(MB_Subscription::ALL)];
 
     // Amount of errors
     uint8_t error_count;
@@ -170,7 +170,7 @@ public:
      * @param id    [Specific ID]
      * @return MB_Subscription& 
      */
-    MB_Subscription& subscribe(
+    MB_Subscription* subscribe(
         Callback<void(MB_Message)> c, 
         MB_Subscription::Type t = MB_Subscription::ALL,
         MB_Device::Type d = MB_Device::NONE,
@@ -186,7 +186,7 @@ public:
      * @param id    [Specific ID]
      * @return MB_Subscription& 
      */
-    MB_Subscription& subscribe(
+    MB_Subscription* subscribe(
         Callback<void(MB_Message)> c, 
         MB_Subscription::Type t, 
         MB_Error::Type e, 
@@ -203,7 +203,7 @@ public:
      * @param id    [Specific ID]
      * @return MB_Subscription& 
      */
-    MB_Subscription& subscribe(
+    MB_Subscription* subscribe(
         Callback<void(MB_Message)> c, 
         MB_Subscription::Type t, 
         MB_Event::Type e, 
@@ -215,7 +215,7 @@ public:
      * 
      * @param s The subscription to remove
      */
-    void unsubscribe(MB_Subscription& s);
+    void unsubscribe(MB_Subscription* s);
 
     /**
      * @brief Get the Address

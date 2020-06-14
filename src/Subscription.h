@@ -65,7 +65,7 @@ public:
      * @param m     Message
      */
     void call(MB_Message m);
-    
+
     friend bool operator==(const MB_Subscription&, const MB_Subscription&);
     friend bool operator!=(const MB_Subscription&, const MB_Subscription&);
 };
