@@ -26,86 +26,53 @@
 
 // Device Unique ID
 uint32_t *uid = (uint32_t *)UID_BASE;
-void can_handler(void);
 
-/**
- * @brief Construct a new mildabus::mildabus object
- * 
- * @param can mbed CAN bus interface used to initialize MildaBus
- * @param master Defines this device as the MildBus Master node (address field will be overruled)
- * @param address override with own address [0x0000 default]
- */
-Mildabus::Mildabus(CAN* can_o, bool master, uint8_t address):can(*can_o)
+Mildabus::Mildabus(CAN* can_o, bool master, uint8_t addr):can(*can_o)
 {
-    if(!Mildabus::can.frequency(500000)){
-        Mildabus::raiseException(MB_Error::CLOCK_ERROR);
+    if(!can.frequency(500000)){
+        raiseException(MB_Error::CLOCK_ERROR);
         return;
     }
     
-    if(!Mildabus::can.mode(CAN::Normal)){
-        Mildabus::raiseException(MB_Error::BUS_ERROR);
+    if(!can.mode(CAN::Normal)){
+        raiseException(MB_Error::BUS_ERROR);
         return;
     }
 
-    Mildabus::device_id = ((uid[0]^uid[1])^uid[2])&0x00FFFFFF; // Xor to join and truncate 4 bits
+    device_id = ((uid[0]^uid[1])^uid[2])&0x00FFFFFF; // Xor to join and truncate 4 bits
 
     if(master){
-        Mildabus::setAddress(MASTER_ADDRESS);
-    }else if(address){
-        Mildabus::setAddress(address);
+        address = MASTER_ADDRESS;
+    }else if(addr){
+        address = addr;
     }
-    Mildabus::master_mode = master;
+    master_mode = master;
 }
 
 Mildabus::~Mildabus(){
-    size_t size = sizeof(MB_Subscription::Type)/sizeof(MB_Subscription::MB_ALL);
+    size_t size = sizeof(MB_Subscription::Type)/sizeof(MB_Subscription::ALL);
     for(uint i = 0; i < size;i++){
-        Mildabus::subsciption_list[i].clear();
+        subscription_list[i].clear();
     }
 }
-/**
- * @brief Prepare the mildabus for operation
- * 
- * @return true success
- * @return false error
- */
-bool Mildabus::getConnected(void){
-    // We need to:
-    //// Check for module ID
-    //// Request module ID if applicable
-    //// 
-    
-    Mildabus::can.reset();
 
-    if(!Mildabus::address){
-        Mildabus::requestAddress(true); // Request and block
+bool Mildabus::getConnected(void){
+
+    can.reset();
+
+    if(!address){
+        requestAddress(true); // Request and block
     }
-    Mildabus::can.attach(callback(this, &Mildabus::can_rx_handler), CAN::RxIrq); // Received
-    Mildabus::can.attach(callback(this, &Mildabus::can_tx_handler), CAN::TxIrq); // Transmitted or aborted
-    Mildabus::can.attach(callback(this, &Mildabus::can_wu_handler), CAN::WuIrq); // Wake Up
+
+    // Setup the interupt handlers
+    can.attach(callback(this, &Mildabus::can_rx_handler), CAN::RxIrq); // Received
+    can.attach(callback(this, &Mildabus::can_tx_handler), CAN::TxIrq); // Transmitted or aborted
+    can.attach(callback(this, &Mildabus::can_wu_handler), CAN::WuIrq); // Wake Up
 
     // Setup the bare subscriptions
-    Mildabus::subscribe(callback(this, &Mildabus::nmtHandler), MB_Subscription::MB_NMT);
-    Mildabus::subscribe(callback(this, &Mildabus::dcnfHandler), MB_Subscription::MB_DCNF);
+    subscribe(callback(this, &Mildabus::nmtHandler), MB_Subscription::NMT);
+    subscribe(callback(this, &Mildabus::dcnfHandler), MB_Subscription::DCNF);
 
-    return true;
-}
-
-/**
- * @brief Set the Mildabus address manually.
- * 
- * @param address for the module
- * @return true success
- * @return false error
- */
-bool Mildabus::setAddress(uint16_t address){
-    if(!address) return false;
-    if(Mildabus::master_mode && address != MASTER_ADDRESS) {
-        Mildabus::raiseException(MB_Error::CONFIG_ERROR);
-        return false;
-    }
-
-    Mildabus::address = address;
     return true;
 }
 
@@ -113,37 +80,32 @@ void Mildabus::requestAddress(bool blocking){
     MB_Message msg;
 
     // Reset the MB address if one is there.    
-    Mildabus::address = 0;
+    address = 0;
 
-    Mildabus::send(msg);
+    send(msg);
     // Block until the address is filled
-    if(blocking) while(!Mildabus::address);
+    if(blocking) while(!address);
 }
 
-/**
- * @private Raise an mildabus exception. Will be transmitted if the bus is active.
- * 
- * @param e @ref MB_Error_Type 
- */
 void Mildabus::raiseException(MB_Error::Type e){
     MB_Error err;
     err.type = e;
     // TO DO: Setup systick/rtc
     err.time = 0;
-    Mildabus::error[Mildabus::error_count] = err;
+    error[error_count] = err;
     // Transmit the fault if the bus is active
-    if(Mildabus::active){
-        Mildabus::transmitExceptions();
+    if(active){
+        transmitExceptions();
     }
 
-    //Mildabus::can.filter();
+    //can.filter();
 
     // Raise the counter
-    if(Mildabus::error_count < 7) {
-        Mildabus::error_count++;
+    if(error_count < 7) {
+        error_count++;
     }else{
         // Roll over
-        Mildabus::error_count = 0;
+        error_count = 0;
     }
 }
 
@@ -151,30 +113,67 @@ bool Mildabus::send(MB_Message msg){
     return true;
 }
 
-bool Mildabus::read(MB_Message& message, MB_Filter filter = MB_Filter()){
+bool Mildabus::read(MB_Message& message, MB_Filter::Type filter){
     int handle = 0;
 
-    if(filter.type != MB_Filter::FILTER_NONE){
+    if(filter != MB_Filter::FILTER_NONE){
         // TBD
     }
 
+    // A MB_Message for the incomming data (true for incomming)
     MB_Message msg;
 
-    if(!Mildabus::can.read(msg, handle)) return false;
+    if(!can.read(msg, handle)) return false;
     
     return true;
 }
 
-void Mildabus::subscribe(Callback<void(MB_Message)> c, MB_Subscription::Type sub_type, MB_Filter filter){
-    MB_Subscription subsciption;
-    subsciption.type = sub_type;
-    subsciption.filter = filter;
-    subsciption.cb = c;
-    Mildabus::subsciption_list[sub_type].push_back(subsciption);
+MB_Subscription& Mildabus::subscribe(Callback<void(MB_Message)> c, MB_Subscription::Type sub_type, MB_Device::Type d, uint8_t id)
+{
+    MB_Subscription subscription(sub_type, MB_Error::NONE, MB_Event::NONE, d, id);
+    subscription.cb = c;
+    subscription_list[sub_type].push_back(subscription);
+    return subscription;
+}
+
+MB_Subscription& Mildabus::subscribe(Callback<void(MB_Message)> c, MB_Subscription::Type sub_type, MB_Event::Type e, MB_Device::Type d, uint8_t id)
+{
+    MB_Subscription subscription(sub_type, MB_Error::NONE, e, d, id);
+    subscription.cb = c;
+    subscription_list[sub_type].push_back(subscription);
+    return subscription;
+}
+
+MB_Subscription& Mildabus::subscribe(Callback<void(MB_Message)> c, MB_Subscription::Type sub_type, MB_Error::Type e, MB_Device::Type d, uint8_t id)
+{
+    MB_Subscription subscription(sub_type, e, MB_Event::NONE, d, id);
+    subscription.cb = c;
+    subscription_list[sub_type].push_back(subscription);
+    return subscription;
 }
 
 void Mildabus::unsubscribe(MB_Subscription& sub){
-    Mildabus::subsciption_list[sub.type].remove(sub);
+    subscription_list[sub.type].remove(sub);
+}
+
+void Mildabus::handle_subscriptions(MB_Message msg){
+    // First do all the message specific subs
+    std::list<MB_Subscription> li = subscription_list[msg.type];
+
+    std::list<MB_Subscription>::iterator it;
+    // For all subscriptions, call the callback
+    for(it = li.begin();it != li.end();++it){
+        it->call(msg);
+    }
+
+    // For the "ALL" subscriptions
+    std::list<MB_Subscription> all_li = subscription_list[MB_Subscription::ALL];
+
+    std::list<MB_Subscription>::iterator all_it;
+    // For all subscriptions, call the callback
+    for(all_it = all_li.begin();all_it != all_li.end();++all_it){
+        all_it->call(msg);
+    }
 }
 
 bool Mildabus::transmitExceptions(void){
@@ -186,8 +185,7 @@ bool Mildabus::transmitExceptions(void){
 
 void Mildabus::can_rx_handler(void){
     MB_Message message;
-    MB_Filter filter;
-    if(Mildabus::read(message, filter)){
+    if(read(message)){
 
     }
 }

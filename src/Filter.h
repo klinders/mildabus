@@ -2,10 +2,13 @@
 #define MB_FILTER_H
 
 #include "Message.h"
-#include "Devices.h"
+#include "Device.h"
+#include <stdint.h>
 
-
-
+/**
+ * @brief Mildabus Filter object
+ * 
+ */
 class MB_Filter{
 public:
     enum Type{
@@ -19,8 +22,8 @@ public:
 
 public:
     MB_Filter(Type t = FILTER_NONE, uint8_t v = 0){
-        type = t;
-        value = v;
+        this->type = t;
+        this->value = v;
     };
 
     bool filterMessage(MB_Message m);
