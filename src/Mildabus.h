@@ -28,7 +28,7 @@
 #include "Message.h"
 #include "Filter.h"
 #include "Subscription.h"
-#include "list"
+#include "mb_list.h"
 #include "Device.h"
 #include <stdint.h>
 
@@ -52,7 +52,7 @@ private:
     uint8_t address;
 
     // Subscriptions linked list
-    std::list<MB_Subscription*> subscription_list[sizeof(MB_Subscription::Type)/sizeof(MB_Subscription::ALL)];
+    MB_List<MB_Subscription*> subscription_list[sizeof(MB_Subscription::Type)/sizeof(MB_Subscription::ALL)];
 
     // Amount of errors
     uint8_t error_count;
@@ -159,7 +159,7 @@ public:
      * @param   t list to read from
      * @return  std::list<MB_Subscription>&
      */
-    std::list<MB_Subscription>& getSubscriptions(MB_Subscription::Type t);
+    MB_List<MB_Subscription*>& getSubscriptions(MB_Subscription::Type t);
 
     /**
      * @brief Add subscription
@@ -216,6 +216,12 @@ public:
      * @param s The subscription to remove
      */
     void unsubscribe(MB_Subscription* s);
+
+    /**
+     * @brief remove all subscription
+     * 
+     */
+    void unsubscribeAll(void);
 
     /**
      * @brief Get the Address

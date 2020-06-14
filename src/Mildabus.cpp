@@ -23,12 +23,14 @@
  */
 #include "Mildabus.h"
 #include <mbed.h>
+#include "mb_list.h"
 
 // Device Unique ID
 uint32_t *uid = (uint32_t *)UID_BASE;
 
 Mildabus::Mildabus(CAN* can_o, bool master, uint8_t addr):can(*can_o)
 {
+    //l.push_back();
     if(!can.frequency(500000)){
         raiseException(MB_Error::CLOCK_ERROR);
         return;
@@ -50,10 +52,7 @@ Mildabus::Mildabus(CAN* can_o, bool master, uint8_t addr):can(*can_o)
 }
 
 Mildabus::~Mildabus(){
-    size_t size = sizeof(MB_Subscription::Type)/sizeof(MB_Subscription::ALL);
-    for(uint i = 0; i < size;i++){
-        subscription_list[i].clear();
-    }
+    unsubscribeAll();
 }
 
 bool Mildabus::getConnected(void){
@@ -162,24 +161,18 @@ void Mildabus::unsubscribe(MB_Subscription* sub){
     delete sub;
 }
 
+void Mildabus::unsubscribeAll(){
+
+}
+
 void Mildabus::handle_subscriptions(MB_Message msg){
     // First do all the message specific subs
-    std::list<MB_Subscription*> li = subscription_list[msg.type];
+    MB_List<MB_Subscription*>& li = subscription_list[msg.type];
 
-    std::list<MB_Subscription*>::iterator it;
-    // For all subscriptions, call the callback
-    for(it = li.begin();it != li.end();++it){
-        (*it)->call(msg);
-    }
 
     // For the "ALL" subscriptions
-    std::list<MB_Subscription*> all_li = subscription_list[MB_Subscription::ALL];
+    MB_List<MB_Subscription*>& all_li = subscription_list[MB_Subscription::ALL];
 
-    std::list<MB_Subscription*>::iterator all_it;
-    // For all subscriptions, call the callback
-    for(all_it = all_li.begin();all_it != all_li.end();++all_it){
-        (*all_it)->call(msg);
-    }
 }
 
 bool Mildabus::transmitExceptions(void){
