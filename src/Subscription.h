@@ -66,6 +66,7 @@ public:
      */
     void call(MB_Message m);
 
+    // Operators for the linked list
     friend bool operator==(const MB_Subscription&, const MB_Subscription&);
     friend bool operator!=(const MB_Subscription&, const MB_Subscription&);
 };

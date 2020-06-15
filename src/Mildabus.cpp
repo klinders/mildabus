@@ -169,6 +169,11 @@ void Mildabus::handle_subscriptions(MB_Message msg){
     // First do all the message specific subs
     MB_List<MB_Subscription*>& li = subscription_list[msg.type];
 
+    MB_List_Iterator<MB_Subscription*> it = li.begin();
+
+    for(;it != li.end(); it++){
+        
+    }
 
     // For the "ALL" subscriptions
     MB_List<MB_Subscription*>& all_li = subscription_list[MB_Subscription::ALL];
