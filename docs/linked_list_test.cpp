@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef MB_LIST_H
-#define MB_LIST_H
-
+#define NULL nullptr
+#include <iostream>
+using namespace std;
 /**
  * @brief Singly linked list node
  * 
@@ -57,13 +57,13 @@ public:
     MB_List_Item<_T>* node;
 
 public:
-    MB_List_Iterator(){
-        node = NULL;
-    }
+     MB_List_Iterator(){
+         node = NULL;
+     }
 
     MB_List_Iterator(MB_List_Item<_T>* n){
         node = n;
-    };
+    }
 
     /**
      * @brief return next node
@@ -88,7 +88,7 @@ public:
         return *this;
     }
 
-    MB_List_Item<_T>& operator=(const MB_List_Iterator<_T>& other){
+    MB_List_Iterator<_T>& operator=(const MB_List_Iterator<_T>& other){
         if(this != &other){
             node = other.node;
         }
@@ -102,17 +102,19 @@ public:
 
     // Overload for the comparison operator ==
     bool operator==(const MB_List_Iterator<_T>& itr) const {
-        return node == itr.node;
+        return node == itr->node;
     }
 
     // Overload for the dereference operator *
     _T& operator*() const {
         return node->value;
     }
-
-    _T* operator->() const{
+    
+        // Overload for the dereference operator *
+    _T* operator->() const {
         return &(node->value);
     }
+
 };
 
 template<class _T>
@@ -169,6 +171,7 @@ public:
             head = tmp;
         }
     }
+    
     /**
      * @brief remove the last item
      * Beware this is an expensive task
@@ -244,7 +247,7 @@ public:
         }
     }
 
-    void for_each(Callback<void(const _T&)> c) const{
+    void for_each(void (*c)(MB_List_Item<_T>)){
         MB_List_Item<_T>* tmp = head;
         while(tmp != NULL){
             c(*tmp);
@@ -274,11 +277,34 @@ public:
      * if the stored item is a pointer, the memory has to be cleared by the user!!
      *  
      */
-    void empty(void){
+    void destroy(void){
         while(size){
             pop_front();
         }
     }
 };
 
-#endif
+template<class _T>
+void print(MB_List_Item<_T> item){
+    cout << item.value << endl;
+}
+
+int main(void){
+    MB_List<int> l;
+    l.push_front(1);
+    l.push_front(2);
+    l.push_front(3);
+    l.push_front(4);
+    l.push_front(1);
+
+    l.destroy();
+    
+    
+    l.for_each(&print);
+    
+    MB_List_Iterator<int> it;
+    
+    for(int el : l){
+        cout << el << endl;
+    }
+}
