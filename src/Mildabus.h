@@ -171,7 +171,7 @@ public:
      * @return MB_Subscription& 
      */
     MB_Subscription* subscribe(
-        Callback<void(MB_Message)> c, 
+        Callback<void(MB_Message&)> c, 
         MB_Subscription::Type t = MB_Subscription::ALL,
         MB_Device::Type d = MB_Device::NONE,
         uint8_t id = 0);
@@ -187,7 +187,7 @@ public:
      * @return MB_Subscription& 
      */
     MB_Subscription* subscribe(
-        Callback<void(MB_Message)> c, 
+        Callback<void(MB_Message&)> c, 
         MB_Subscription::Type t, 
         MB_Error::Type e, 
         MB_Device::Type d = MB_Device::NONE, 
@@ -204,7 +204,7 @@ public:
      * @return MB_Subscription& 
      */
     MB_Subscription* subscribe(
-        Callback<void(MB_Message)> c, 
+        Callback<void(MB_Message&)> c, 
         MB_Subscription::Type t, 
         MB_Event::Type e, 
         MB_Device::Type d = MB_Device::NONE, 
@@ -272,13 +272,14 @@ public:
      * 
      * @param m     Message
      */
-    void nmtHandler(MB_Message m);
+    void nmtHandler(MB_Message& m);
 
     /**
      * @brief Handle all DCNF messaged
      * 
      * @param m     Message
      */
-    void dcnfHandler(MB_Message m);
+    void dcnfHandler(MB_Message& m);
+
 };
 #endif

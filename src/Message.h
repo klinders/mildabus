@@ -42,6 +42,8 @@
 #define DEVICE_ID(ID)       (ID&DEVICE_ID_MASK)             // Macro to define device id
 #define NODE_ID(ID)         (ID&NODE_ID_MASK)               // Macro to define node id
 
+
+
 /**
  * @brief Mildabus Message Object (extends mbed::CANMessage)
  * 
@@ -54,7 +56,7 @@ public:
         NMT = 0x0,
         GFC = 0x1,              /* Not used! */
         SYNC = 0x2,             /* Synchronization */
-        ERROR = 0x3,             /* Emergency (error) */
+        EMCY = 0x3,             /* Emergency (error) */
         TSTMP = 0x4,            /* Timestamp message */
         EVENT_TX = 0x5,         /* Event (broadcast) */ 
         EVENT_RX = 0x6,         /* Event (request?) */

@@ -127,7 +127,7 @@ bool Mildabus::read(MB_Message& message, MB_Filter::Type filter){
     return true;
 }
 
-MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message)> c, MB_Subscription::Type sub_type, MB_Device::Type d, uint8_t id)
+MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message&)> c, MB_Subscription::Type sub_type, MB_Device::Type d, uint8_t id)
 {
     // Be warned! This is going to the heap
     MB_Subscription* subscription = new MB_Subscription(sub_type, MB_Error::NONE, MB_Event::NONE, d, id);
@@ -136,7 +136,7 @@ MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message)> c, MB_Subscripti
     return subscription;
 }
 
-MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message)> c, MB_Subscription::Type sub_type, MB_Event::Type e, MB_Device::Type d, uint8_t id)
+MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message&)> c, MB_Subscription::Type sub_type, MB_Event::Type e, MB_Device::Type d, uint8_t id)
 {
     // Be warned! This is going to the heap
     MB_Subscription* subscription = new MB_Subscription(sub_type, MB_Error::NONE, e, d, id);
@@ -145,7 +145,7 @@ MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message)> c, MB_Subscripti
     return subscription;
 }
 
-MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message)> c, MB_Subscription::Type sub_type, MB_Error::Type e, MB_Device::Type d, uint8_t id)
+MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message&)> c, MB_Subscription::Type sub_type, MB_Error::Type e, MB_Device::Type d, uint8_t id)
 {
     // Be warned! This is going to the heap
     MB_Subscription* subscription = new MB_Subscription(sub_type, e, MB_Event::NONE, d, id);
@@ -166,18 +166,24 @@ void Mildabus::unsubscribeAll(){
 }
 
 void Mildabus::handle_subscriptions(MB_Message msg){
+    // Convert the message type to sub type
+    MB_Subscription::Type s_type = MB_Subscription::typeFromMessage(msg);
+    if(s_type == MB_Subscription::NONE) return;
     // First do all the message specific subs
-    MB_List<MB_Subscription*>& li = subscription_list[msg.type];
+    MB_List<MB_Subscription*>& l = subscription_list[s_type];
 
-    MB_List_Iterator<MB_Subscription*> it = li.begin();
-
-    for(;it != li.end(); it++){
-        
+    // For each element in the list
+    for(MB_Subscription* el : l){
+        el->call(msg);
     }
 
     // For the "ALL" subscriptions
-    MB_List<MB_Subscription*>& all_li = subscription_list[MB_Subscription::ALL];
+    MB_List<MB_Subscription*>& all_l = subscription_list[MB_Subscription::ALL];
 
+    // For each element in the list
+    for(MB_Subscription* el : all_l){
+        el->call(msg);
+    }
 }
 
 bool Mildabus::transmitExceptions(void){
@@ -202,10 +208,10 @@ void Mildabus::can_wu_handler(void){
 
 }
 
-void Mildabus::nmtHandler(MB_Message m){
+void Mildabus::nmtHandler(MB_Message& m){
     
 }
 
-void Mildabus::dcnfHandler(MB_Message m){
+void Mildabus::dcnfHandler(MB_Message& m){
 
 }

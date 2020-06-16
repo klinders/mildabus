@@ -26,6 +26,7 @@
 
 #include <mbed.h>
 #include "Filter.h"
+#include "Message.h"
 #include <stdint.h>
 
 class MB_Subscription{
@@ -47,6 +48,7 @@ public:
         SYS_REQ,
         EVENT,
         ERROR,
+        NONE
         //...
     } type;
 
@@ -63,7 +65,7 @@ public:
     MB_Device::Type device_filter;
 
     // The Callback object
-    Callback<void(MB_Message)> cb;
+    Callback<void(MB_Message&)> cb;
 
 public:
     /**
@@ -87,7 +89,9 @@ public:
      * 
      * @param m     Message
      */
-    void call(MB_Message m);
+    void call(MB_Message& m);
+
+    static MB_Subscription::Type typeFromMessage(MB_Message& m);
 
     // Operators for the linked list
     friend bool operator==(const MB_Subscription&, const MB_Subscription&);

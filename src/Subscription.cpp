@@ -23,7 +23,28 @@
  */
 #include "Filter.h"
 #include "Subscription.h"
+#include "Message.h"
 #include <stdint.h>
+
+// Conversion table from message to subscription type
+MB_Subscription::Type message_conversion[] = {
+    MB_Subscription::NMT,       
+    MB_Subscription::NONE,
+    MB_Subscription::SYNC,
+    MB_Subscription::ERROR,
+    MB_Subscription::TSTMP,
+    MB_Subscription::EVENT,
+    MB_Subscription::NONE,
+    MB_Subscription::DATA,
+    MB_Subscription::DATA_REQ,
+    MB_Subscription::BLOCK,
+    MB_Subscription::BLOCK_REQ,
+    MB_Subscription::SYS,
+    MB_Subscription::SYS_REQ,
+    MB_Subscription::HRTBT,
+    MB_Subscription::DCNF,
+    MB_Subscription::DCNF_REQ
+};
 
 MB_Subscription::MB_Subscription(
     Type t, 
@@ -39,8 +60,12 @@ MB_Subscription::MB_Subscription(
     id_filter = id;
 }
 
-void MB_Subscription::call(MB_Message msg){
+void MB_Subscription::call(MB_Message& msg){
     
+}
+
+MB_Subscription::Type MB_Subscription::typeFromMessage(MB_Message& m){
+    return message_conversion[m.type];
 }
 
 bool operator==(const MB_Subscription &o1,const MB_Subscription &o2){
