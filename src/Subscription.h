@@ -25,32 +25,14 @@
 #define MB_SUBSCRIPTION_H
 
 #include <mbed.h>
-#include "Filter.h"
 #include "Message.h"
+#include "Filter.h"
 #include <stdint.h>
 
 class MB_Subscription{
 public:
     // Subscription Type
-    enum Type {
-        ALL,
-        NMT,
-        SYNC,
-        TSTMP,
-        HRTBT,
-        DCNF,
-        DCNF_REQ,
-        DATA,
-        DATA_REQ,
-        BLOCK,
-        BLOCK_REQ,
-        SYS,
-        SYS_REQ,
-        EVENT,
-        ERROR,
-        NONE
-        //...
-    } type;
+    enum MB_Message::Type type;
 
     // Specific Error Type filter
     MB_Error::Type error_filter;
@@ -58,8 +40,10 @@ public:
     // Specific Event Type filter
     MB_Event::Type event_filter;
 
-        // Specific ID filter
-    uint8_t id_filter;
+    // Specific ID filter
+    uint32_t id_filter;
+
+    MB_Filter filter;
 
 private:
     // The Callback object
@@ -76,10 +60,10 @@ public:
      * @param id    [Specific ID]
      */
     MB_Subscription(
-        Type t, 
+        MB_Message::Type t, 
         MB_Error::Type er = MB_Error::NONE, 
         MB_Event::Type ev = MB_Event::NONE,
-        uint8_t id = 0);
+        uint32_t id = 0);
     
     /**
      * @brief Call the handler (If message matches the filters)
@@ -94,8 +78,6 @@ public:
      * @param c callback
      */
     void attach(Callback<void(MB_Message&)> c);
-
-    static MB_Subscription::Type typeFromMessage(MB_Message& m);
 
     // Operators for the linked list
     friend bool operator==(const MB_Subscription&, const MB_Subscription&);

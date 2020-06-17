@@ -56,7 +56,7 @@ public:
         NMT = 0x0,
         GFC = 0x1,              /* Not used! */
         SYNC = 0x2,             /* Synchronization */
-        EMCY = 0x3,             /* Emergency (error) */
+        ERROR = 0x3,             /* Emergency (error) */
         TSTMP = 0x4,            /* Timestamp message */
         EVENT_TX = 0x5,         /* Event (broadcast) */ 
         EVENT_RX = 0x6,         /* Event (request?) */
@@ -68,7 +68,13 @@ public:
         SYS_RX = 0xC,           /* System Parameter Request */
         HRTBT = 0xD,            /* Heartbeat */
         DCNF_TX = 0xE,          /* Assign a new device address (master only) */
-        DCNF_RX = 0xF           /* Request a new device address */
+        DCNF_RX = 0xF,           /* Request a new device address */
+        
+        // Types for filter
+        ALL,
+        NONE,
+        // counter
+        TYPE_COUNT
     } type;
     // Mildabus Error
     MB_Error error;

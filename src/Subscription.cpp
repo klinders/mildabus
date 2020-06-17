@@ -26,27 +26,7 @@
 #include "Message.h"
 #include <stdint.h>
 
-// Conversion table from message to subscription type
-MB_Subscription::Type message_conversion[] = {
-    MB_Subscription::NMT,       
-    MB_Subscription::NONE,
-    MB_Subscription::SYNC,
-    MB_Subscription::ERROR,
-    MB_Subscription::TSTMP,
-    MB_Subscription::EVENT,
-    MB_Subscription::NONE,
-    MB_Subscription::DATA,
-    MB_Subscription::DATA_REQ,
-    MB_Subscription::BLOCK,
-    MB_Subscription::BLOCK_REQ,
-    MB_Subscription::SYS,
-    MB_Subscription::SYS_REQ,
-    MB_Subscription::HRTBT,
-    MB_Subscription::DCNF,
-    MB_Subscription::DCNF_REQ
-};
-
-MB_Subscription::MB_Subscription(Type t, MB_Error::Type er, MB_Event::Type ev, uint8_t id):
+MB_Subscription::MB_Subscription(MB_Message::Type t, MB_Error::Type er, MB_Event::Type ev, uint32_t id):
     type(t),
     error_filter(er),
     event_filter(ev),
@@ -61,14 +41,14 @@ void MB_Subscription::call(MB_Message& msg){
     // Type specific filters
     switch (type)
     {
-    case ERROR:
+    case MB_Message::ERROR:
         if(error_filter != MB_Error::NONE){
             if(error_filter != msg.error.type){
                 return;
             }
         }
         break;
-    case EVENT:
+    case MB_Message::EVENT_TX:
         if(event_filter != MB_Event::NONE){
             if(event_filter != msg.event.type){
                 return;
@@ -87,10 +67,6 @@ void MB_Subscription::call(MB_Message& msg){
     }
     // If we are here, we passed all filters
     _callback(msg);
-}
-
-MB_Subscription::Type MB_Subscription::typeFromMessage(MB_Message& m){
-    return message_conversion[m.type];
 }
 
 bool operator==(const MB_Subscription &o1,const MB_Subscription &o2){
