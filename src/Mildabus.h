@@ -40,28 +40,28 @@ class Mildabus
 {
 private:
     // The CAN object to operate
-    CAN& can;
+    CAN* _can;
 
     // Is the Mildabus operating in Master Mode
-    bool master_mode;
+    bool _master_mode;
 
     // Is the Mildabus Connected
-    bool active;
+    bool _active;
 
     // The MB Node Address
-    uint8_t address;
+    uint8_t _address;
 
     // Subscriptions linked list
-    MB_List<MB_Subscription*> subscription_list[sizeof(MB_Subscription::Type)/sizeof(MB_Subscription::ALL)];
+    MB_List<MB_Subscription*> _subscription_list[sizeof(MB_Subscription::Type)/sizeof(MB_Subscription::ALL)];
 
     // Amount of errors
-    uint8_t error_count;
+    uint8_t _error_count;
 
     // The Error array (past 8 errors)
-    MB_Error error[8];
+    MB_Error _error[8];
 
     // The MB Node Device ID
-    uint32_t device_id;
+    uint32_t _device_id;
 
     /**
      * @brief Transmit all errors from the error array
@@ -69,48 +69,63 @@ private:
      * @return true     Success
      * @return false    Error (again...)
      */
-    bool transmitExceptions(void);
+    bool _transmit_exceptions(void);
 
     /**
      * @brief Request a NODE ID from the master
      * 
      * @param blocking 
      */
-    void requestAddress(bool blocking);
+    void _request_address(bool blocking);
     
     /**
      * @brief Call all the callbacks of the subscriptions for this message.
      * 
      * @param msg   The recieved MB_Message.
      */
-    void handle_subscriptions(MB_Message);
+    void _handle_subscriptions(MB_Message&);
     
     /**
      * @brief The read handler
      * 
      */
-    void can_rx_handler(void);
+    void _can_rx_handler(void);
 
     /**
      * @brief The write handler (gets called on transmit or abort)
      * 
      */
-    void can_tx_handler(void);
+    void _can_tx_handler(void);
 
     /**
      * @brief The Wake-Up handler
      * 
      */
-    void can_wu_handler(void);
+    void _can_wu_handler(void);
+    
+    /**
+     * @brief Handle all NMT messaged
+     * 
+     * @param m     Message
+     */
+    void _nmt_handler(MB_Message& m);
+
+    /**
+     * @brief Handle all DCNF messaged
+     * 
+     * @param m     Message
+     */
+    void _dcnf_handler(MB_Message& m);
 public:
     /**
      * @brief Construct a new Mildabus object
      * 
-     * @param can       The CAN object to operate with
+     * @param rx        PinName for the RX pin
+     * @param tx        PinName for the TX pin
      * @param master    [Operate in master mode]
      * @param address   [Predefine a specific address]
      */
-    Mildabus(CAN* can_o, bool master = false, uint8_t address = 0x00);
+    Mildabus(PinName rx, PinName tx, bool master = false, uint8_t address = 0x00);
 
     /**
      * @brief Destroy the Mildabus object
@@ -166,14 +181,12 @@ public:
      * 
      * @param c     Callback
      * @param t     [Type of incomming message]
-     * @param d     [Type of device]
      * @param id    [Specific ID]
      * @return MB_Subscription& 
      */
     MB_Subscription* subscribe(
         Callback<void(MB_Message&)> c, 
         MB_Subscription::Type t = MB_Subscription::ALL,
-        MB_Device::Type d = MB_Device::NONE,
         uint8_t id = 0);
 
     /**
@@ -182,7 +195,6 @@ public:
      * @param c     Callback
      * @param t     Type of incomming message
      * @param e     Type of error
-     * @param d     [Type of device]
      * @param id    [Specific ID]
      * @return MB_Subscription& 
      */
@@ -190,7 +202,6 @@ public:
         Callback<void(MB_Message&)> c, 
         MB_Subscription::Type t, 
         MB_Error::Type e, 
-        MB_Device::Type d = MB_Device::NONE, 
         uint8_t id = 0);
 
     /**
@@ -199,7 +210,6 @@ public:
      * @param c     Callback
      * @param t     Type of incomming message
      * @param e     Type of event
-     * @param d     [Type of device]
      * @param id    [Specific ID]
      * @return MB_Subscription& 
      */
@@ -207,7 +217,6 @@ public:
         Callback<void(MB_Message&)> c, 
         MB_Subscription::Type t, 
         MB_Event::Type e, 
-        MB_Device::Type d = MB_Device::NONE, 
         uint8_t id = 0);
 
     /**
@@ -228,28 +237,28 @@ public:
      * 
      * @return uint8_t 
      */
-    uint8_t getAddress(void) const{return address;};
+    uint8_t getAddress(void) const{return _address;};
 
     /**
      * @brief Get the Error Count
      * 
      * @return uint8_t 
      */
-    uint8_t getErrorCount(void) const{return error_count;};
+    uint8_t getErrorCount(void) const{return _error_count;};
 
     /**
      * @brief Get the Device ID
      * 
      * @return uint32_t 
      */
-    uint32_t getDeviceID(void) const{return device_id;};
+    uint32_t getDeviceID(void) const{return _device_id;};
 
     /**
      * @brief Get the Errors array
      * 
      * @return const MB_Error* const 
      */
-    const MB_Error* const getErrors(void) const{return error;};
+    const MB_Error* const getErrors(void) const{return _error;};
 
     /**
      * @brief Check if the Mildabus is connected
@@ -257,7 +266,7 @@ public:
      * @return true 
      * @return false 
      */
-    bool isActive(void) const{return active;};
+    bool isActive(void) const{return _active;};
 
     /**
      * @brief Check if the Mildabus is in Master Mode
@@ -265,21 +274,7 @@ public:
      * @return true 
      * @return false 
      */
-    bool isMaster(void) const{return master_mode;};
-
-    /**
-     * @brief Handle all NMT messaged
-     * 
-     * @param m     Message
-     */
-    void nmtHandler(MB_Message& m);
-
-    /**
-     * @brief Handle all DCNF messaged
-     * 
-     * @param m     Message
-     */
-    void dcnfHandler(MB_Message& m);
+    bool isMaster(void) const{return _master_mode;};
 
 };
 #endif

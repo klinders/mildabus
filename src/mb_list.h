@@ -27,12 +27,12 @@
 /**
  * @brief Singly linked list node
  * 
- * @tparam _T type
+ * @tparam data_type type
  */
-template<typename _T>
+template<typename data_type>
 struct MB_List_Item {
 public:
-    _T value;
+    data_type value;
     MB_List_Item* next;
 
     bool operator==(const MB_List_Item& o2){
@@ -49,78 +49,78 @@ public:
 /**
  * @brief Singly linked list iterator
  * 
- * @tparam _T type
+ * @tparam data_type type
  */
-template<typename _T>
+template<typename data_type>
 struct MB_List_Iterator {
-public:
-    MB_List_Item<_T>* node;
+private:
+    MB_List_Item<data_type>* _node;
 
 public:
     MB_List_Iterator(){
-        node = NULL;
+        _node = NULL;
     }
 
-    MB_List_Iterator(MB_List_Item<_T>* n){
-        node = n;
+    MB_List_Iterator(MB_List_Item<data_type>* n){
+        _node = n;
     };
 
     /**
      * @brief return next node
      * 
-     * @return MB_List_Item<_T> 
+     * @return MB_List_Item<data_type> 
      */
-    MB_List_Iterator<_T> next(void) const{
-        node = node->next;
+    MB_List_Iterator<data_type> next(void) const{
+        _node = _node->next;
         return *this;
     }
 
     // Overload for the postincrement operator ++
-    MB_List_Iterator<_T> operator++(int) {
-        MB_List_Iterator<_T> temp = *this;
-        node = node->next;
+    MB_List_Iterator<data_type> operator++(int) {
+        MB_List_Iterator<data_type> temp = *this;
+        _node = _node->next;
         return temp;
     }
 
     // Overload for the preincrement operator ++
-    MB_List_Iterator<_T>& operator++() {
-        node = node->next;
+    MB_List_Iterator<data_type>& operator++() {
+        _node = _node->next;
         return *this;
     }
 
-    MB_List_Item<_T>& operator=(const MB_List_Iterator<_T>& other){
+    MB_List_Item<data_type>& operator=(const MB_List_Iterator<data_type>& other){
         if(this != &other){
-            node = other.node;
+            _node = other._node;
         }
         return *this;
     }
 
     // Overload for the comparison operator !=
-    bool operator!=(const MB_List_Iterator<_T>& itr) const {
-        return node != itr.node;
+    bool operator!=(const MB_List_Iterator<data_type>& itr) const {
+        return _node != itr._node;
     }
 
     // Overload for the comparison operator ==
-    bool operator==(const MB_List_Iterator<_T>& itr) const {
-        return node == itr.node;
+    bool operator==(const MB_List_Iterator<data_type>& itr) const {
+        return _node == itr._node;
     }
 
     // Overload for the dereference operator *
-    _T& operator*() const {
-        return node->value;
+    data_type& operator*() const {
+        return _node->value;
     }
 
-    _T* operator->() const{
-        return &(node->value);
+    data_type* operator->() const{
+        return &(_node->value);
     }
 };
 
-template<class _T>
+template<class data_type>
 class MB_List {
 private:
-    MB_List_Item<_T>* head;
-    MB_List_Item<_T>* tail;
-    int size;
+    MB_List_Item<data_type>* _head;
+    MB_List_Item<data_type>* _tail;
+    int _size;
 
 public:
     /**
@@ -128,45 +128,45 @@ public:
      * 
      */
     MB_List(){
-        head = NULL;
-        tail = NULL;
-        size = 0;
+        _head = NULL;
+        _tail = NULL;
+        _size = 0;
     }
     /**
      * @brief Add item to the back of the list
      * 
-     * @param _value reference to the item
+     * @param value reference to the item
      */
-    void push_back(_T _value){
-        MB_List_Item<_T>* tmp = new MB_List_Item<_T>;
-        tmp->value = _value;
-        size++;
-        if(head == NULL){
+    void push_back(data_type value){
+        MB_List_Item<data_type>* tmp = new MB_List_Item<data_type>;
+        tmp->value = value;
+        _size++;
+        if(_head == NULL){
             tmp->next = NULL;
-            head = tmp;
-            tail = tmp;
+            _head = tmp;
+            _tail = tmp;
         }else{
-            tail->next = tmp;
-            tail = tmp;
+            _tail->next = tmp;
+            _tail = tmp;
         }
     }
 
     /**
      * @brief Add item to the front of the list
      * 
-     * @param _value reference to the item
+     * @param value reference to the item
      */
-    void push_front(_T _value){
-        MB_List_Item<_T>* tmp = new MB_List_Item<_T>;
-        tmp->value = _value;
-        size++;
-        if(head == NULL){
+    void push_front(data_type value){
+        MB_List_Item<data_type>* tmp = new MB_List_Item<data_type>;
+        tmp->value = value;
+        _size++;
+        if(_head == NULL){
             tmp->next = NULL;
-            head = tmp;
-            tail = tmp;
+            _head = tmp;
+            _tail = tmp;
         }else{
-            tmp->next = head;
-            head = tmp;
+            tmp->next = _head;
+            _head = tmp;
         }
     }
     /**
@@ -175,14 +175,14 @@ public:
      * 
      */
     void pop_back(void){
-        if(head == NULL) return;
-        if(head->next == NULL){
-            delete head;
-            head = NULL;
-            tail = NULL;
+        if(_head == NULL) return;
+        if(_head->next == NULL){
+            delete _head;
+            _head = NULL;
+            _tail = NULL;
         }else{
-            MB_List_Item<_T>* tmp = head;
-            MB_List_Item<_T>* prev = NULL;
+            MB_List_Item<data_type>* tmp = _head;
+            MB_List_Item<data_type>* prev = NULL;
         
             while(tmp->next != NULL){
                 prev = tmp;
@@ -192,15 +192,15 @@ public:
             prev->next = NULL;
             delete tmp;
         }
-        size--;
+        _size--;
     }
 
     void pop_front(void){
-        if(head == NULL) return;
-        MB_List_Item<_T>* tmp = head;
-        head = head->next;
+        if(_head == NULL) return;
+        MB_List_Item<data_type>* tmp = _head;
+        _head = _head->next;
         delete tmp;
-        size--;
+        _size--;
     }
 
     /**
@@ -208,24 +208,24 @@ public:
      * Be aware: this function only removes the item from the list.
      * if the stored item is a pointer, the memory has to be cleared by the user!!
      * 
-     * @param _value a reference to the item value
+     * @param value a reference to the item value
      */
-    void remove(_T _value){
-        MB_List_Item<_T>* tmp = head;
-        MB_List_Item<_T>* prev = NULL;
+    void remove(data_type value){
+        MB_List_Item<data_type>* tmp = _head;
+        MB_List_Item<data_type>* prev = NULL;
         while(tmp != NULL){
-            if(tmp->value == _value){
+            if(tmp->value == value){
                 // We have a match
-                if(tmp == head){
+                if(tmp == _head){
                     // Remove the head and relink
-                    head = tmp->next;
+                    _head = tmp->next;
                     delete tmp;
                     // Start with the new head to find more matches
-                    tmp = head;
-                }else if(tmp == tail){
+                    tmp = _head;
+                }else if(tmp ==  _tail){
                     // Break the link of prev
                     prev->next = NULL;
-                    tail = prev;
+                    _tail = prev;
                     delete tmp;
                     // Set tmp to null to end the loop
                     tmp = NULL;
@@ -236,7 +236,7 @@ public:
                     // Change tmp to the new next
                     tmp = prev->next;
                 }
-                size--;
+                _size--;
             }else{
                 prev = tmp;
                 tmp = tmp->next;
@@ -244,8 +244,8 @@ public:
         }
     }
 
-    void for_each(Callback<void(const _T&)> c) const{
-        MB_List_Item<_T>* tmp = head;
+    void for_each(Callback<void(const data_type&)> c) const{
+        MB_List_Item<data_type>* tmp = _head;
         while(tmp != NULL){
             c(*tmp);
             tmp = tmp->next;
@@ -257,15 +257,15 @@ public:
      * @return const int size
      */
     const int getSize(void) const{
-        return size;
+        return _size;
     }
     
-    MB_List_Iterator<_T> begin(void){
-        return MB_List_Iterator<_T>(head);
+    MB_List_Iterator<data_type> begin(void){
+        return MB_List_Iterator<data_type>(_head);
     }
 
-    MB_List_Iterator<_T> end(void){
-        return MB_List_Iterator<_T>();
+    MB_List_Iterator<data_type> end(void){
+        return MB_List_Iterator<data_type>();
     }
 
     /**
@@ -275,7 +275,7 @@ public:
      *  
      */
     void empty(void){
-        while(size){
+        while(_size){
             pop_front();
         }
     }

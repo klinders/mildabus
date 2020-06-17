@@ -46,22 +46,47 @@ MB_Subscription::Type message_conversion[] = {
     MB_Subscription::DCNF_REQ
 };
 
-MB_Subscription::MB_Subscription(
-    Type t, 
-    MB_Error::Type er, 
-    MB_Event::Type ev, 
-    MB_Device::Type d, 
-    uint8_t id)
-{
-    type = t;
-    error_filter = er;
-    event_filter = ev;
-    device_filter = d;
-    id_filter = id;
+MB_Subscription::MB_Subscription(Type t, MB_Error::Type er, MB_Event::Type ev, uint8_t id):
+    type(t),
+    error_filter(er),
+    event_filter(ev),
+    id_filter(id){}
+
+void MB_Subscription::attach(Callback<void(MB_Message&)> c){
+    _callback = c;
 }
 
 void MB_Subscription::call(MB_Message& msg){
-    
+
+    // Type specific filters
+    switch (type)
+    {
+    case ERROR:
+        if(error_filter != MB_Error::NONE){
+            if(error_filter != msg.error.type){
+                return;
+            }
+        }
+        break;
+    case EVENT:
+        if(event_filter != MB_Event::NONE){
+            if(event_filter != msg.event.type){
+                return;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+
+    // If we have an ID filter installed
+    if(id_filter != 0){
+        if(id_filter != msg.id){
+            return;
+        }
+    }
+    // If we are here, we passed all filters
+    _callback(msg);
 }
 
 MB_Subscription::Type MB_Subscription::typeFromMessage(MB_Message& m){
@@ -70,12 +95,12 @@ MB_Subscription::Type MB_Subscription::typeFromMessage(MB_Message& m){
 
 bool operator==(const MB_Subscription &o1,const MB_Subscription &o2){
     bool t = o1.type == o2.type;
-    bool c = o1.cb == o2.cb;
+    bool c = o1._callback == o2._callback;
     return (t & c);
 }
 
 bool operator!=(const MB_Subscription &o1,const MB_Subscription &o2){
     bool t = o1.type == o2.type;
-    bool c = o1.cb == o2.cb;
+    bool c = o1._callback == o2._callback;
     return !(t & c);
 }

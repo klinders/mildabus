@@ -52,20 +52,18 @@ public:
         //...
     } type;
 
-    // Specific ID filter
-    uint8_t id_filter;
-
     // Specific Error Type filter
     MB_Error::Type error_filter;
 
     // Specific Event Type filter
     MB_Event::Type event_filter;
 
-    // Specific Device Type filter
-    MB_Device::Type device_filter;
+        // Specific ID filter
+    uint8_t id_filter;
 
+private:
     // The Callback object
-    Callback<void(MB_Message&)> cb;
+    Callback<void(MB_Message&)> _callback;
 
 public:
     /**
@@ -80,8 +78,7 @@ public:
     MB_Subscription(
         Type t, 
         MB_Error::Type er = MB_Error::NONE, 
-        MB_Event::Type ev = MB_Event::NONE, 
-        MB_Device::Type d = MB_Device::NONE, 
+        MB_Event::Type ev = MB_Event::NONE,
         uint8_t id = 0);
     
     /**
@@ -90,6 +87,13 @@ public:
      * @param m     Message
      */
     void call(MB_Message& m);
+
+    /**
+     * @brief attach a callback
+     * 
+     * @param c callback
+     */
+    void attach(Callback<void(MB_Message&)> c);
 
     static MB_Subscription::Type typeFromMessage(MB_Message& m);
 

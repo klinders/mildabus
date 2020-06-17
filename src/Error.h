@@ -43,6 +43,9 @@ struct MB_Error{
     } type;
     uint32_t time;              /* Current time */
     bool transmitted;           /* Error has been transmitted on the bus */
+
+    MB_Error(){};
+    ~MB_Error(){};
 };
 
 #endif
