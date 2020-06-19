@@ -7,12 +7,35 @@ The project is build upon Mbed-OS.
 
 ## Usage
 ```C++
-#import <mbed.h>
-#import <Mildabus.h>
-// Create a can interface using the MBED CAN Class
-CAN my_can_interface(PIN_RX, PIN_TX);
-// Create a Mildabus and pass the MBED CAN operator. 
-Mildabus my_mildabus(my_can_interface [, MASTER] [, ADDRESS]);  
+// Example script with an LED
+// Mildabus is initialised in test (loopback) mode so it receives its own messages.
+// The LED will toggle once a second.
+#include <mbed.h>
+#include <Mildabus.h>
+
+// Initialise the Mildabus
+Mildabus milda1(CAN1_RX, CAN1_TX, /* MASTER = */ false, /* ID = */ 0, /* TEST_MODE = */ true);
+
+// Event handler
+void event(MB_Message&);
+
+int main() {
+
+    bus1.getConnected();
+    // Attach a handler to a specific event
+	bus1.subscribe(callback(&event), MB_Message::EVENT_TX, MB_Event::LIGHTS_ON);
+
+	while(1) {
+		// Send a message once a second.
+		wait_ms(1000);
+		bus1.send(MB_Event::LIGHTS_ON);
+	}
+}
+
+void event(MB_Message& m){
+    // Toggle your led
+	Led.toggle();
+} 
 
 ```
 
