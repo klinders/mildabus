@@ -45,6 +45,7 @@ struct MB_Error{
     bool transmitted;           /* Error has been transmitted on the bus */
 
     MB_Error(){};
+    MB_Error(MB_Error::Type t):type(t){};
     ~MB_Error(){};
 };
 

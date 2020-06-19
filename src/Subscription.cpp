@@ -65,8 +65,10 @@ void MB_Subscription::call(MB_Message& msg){
             return;
         }
     }
-    // If we are here, we passed all filters
-    _callback(msg);
+    if(_callback){
+        // If we are here, we passed all filters
+        _callback(msg);
+    }
 }
 
 bool operator==(const MB_Subscription &o1,const MB_Subscription &o2){

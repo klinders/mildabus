@@ -88,7 +88,7 @@ public:
         return *this;
     }
 
-    MB_List_Item<data_type>& operator=(const MB_List_Iterator<data_type>& other){
+    MB_List_Iterator<data_type>& operator=(const MB_List_Iterator<data_type>& other){
         if(this != &other){
             _node = other._node;
         }

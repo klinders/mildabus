@@ -25,20 +25,31 @@
 #include <stdint.h>
 
 MB_Message::MB_Message(){
-    MB_Message::type = MB_Message::DATA_TX;
+    MB_Message::mb_type = MB_Message::DATA_TX;
 }
 
 void MB_Message::parse(){
-    if(this->len){
+
+    if(format == CANFormat::CANStandard){
         // Get the first 4 bits for the function code
-        this->type = (MB_Message::Type)(FUNCTION_CODE(this->id));
-        
-        if(this->format == CANFormat::CANExtended){
-            // Get the last 25 bits for the full device ID
-            this->from.device_id = DEVICE_ID(this->id); 
-        }else{
-            // Get the last 25 bits for the node ID
-            this->from.id = (uint8_t)(NODE_ID(this->id));
-        }
+        this->mb_type = (MB_Message::Type)((id >> 7) & 0xF);
+        // Get the last 25 bits for the node ID
+        this->from.id = (uint8_t)(id & NODE_ID_MASK);
+        this->from.device_id = 0;
+    }else{
+        this->mb_type = (MB_Message::Type)((id >> 25) & 0xF);
+        // Get the last 25 bits for the full device ID
+        this->from.device_id = (uint32_t)(id & DEVICE_ID_MASK); 
+    }
+
+    switch (mb_type)
+    {
+    case MB_Message::EVENT_TX:
+        event = MB_Event((MB_Event::Type)data[0]);
+        break;
+    case MB_Message::ERROR:
+        error = MB_Error((MB_Error::Type)data[0]);
+    default:
+        break;
     }
 }

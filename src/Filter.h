@@ -4,10 +4,10 @@
 #include "Message.h"
 
 struct MB_Filter{
-    uint32_t id;
-    uint32_t mask;
-    uint32_t handle;
-    CANFormat format;
+    uint32_t id = 0;
+    uint32_t mask = 0;
+    uint32_t handle = 0;
+    CANFormat format = CANStandard;
 
     bool active;
     MB_Filter(){

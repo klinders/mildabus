@@ -31,8 +31,12 @@
 struct MB_Event{
     // Event Type
     enum Type {
-        NONE = 0x00
+        NONE = 0x00,
+        LIGHTS_ON
     } type;
+
+    MB_Event(){};
+    MB_Event(MB_Event::Type t):type(t){};
 };
 
 #endif

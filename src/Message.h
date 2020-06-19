@@ -75,7 +75,7 @@ public:
         NONE,
         // counter
         TYPE_COUNT
-    } type;
+    } mb_type;
     // Mildabus Error
     MB_Error error;
     // Mildabus Event

@@ -63,5 +63,8 @@ public:
      * 
      */
     uint32_t device_id;
+
+    MB_Device(){};
+    MB_Device(uint8_t address):id(address){};
 };
 #endif

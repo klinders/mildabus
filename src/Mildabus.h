@@ -157,8 +157,9 @@ public:
 	 * @param tx        PinName for the TX pin
 	 * @param master    [Operate in master mode]
 	 * @param address   [Predefine a specific address]
+	 * @param debug		[Debug by using CAN loopback]
 	 */
-	Mildabus(PinName rx, PinName tx, bool master = false, uint8_t address = 0x00);
+	Mildabus(PinName rx, PinName tx, bool master = false, uint8_t address = 0x00, bool debug = false);
 
 	/**
 	 * @brief Destroy the Mildabus object
@@ -189,6 +190,8 @@ public:
 	 * @return false    Error
 	 */
 	bool send(MB_Message m);
+
+	bool send(MB_Event::Type e, uint8_t id = 0);
 
 	/**
 	 * @brief Read a message from the Mildabus

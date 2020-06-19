@@ -29,7 +29,7 @@
 // Device Unique ID
 uint32_t *uid = (uint32_t *)UID_BASE;
 
-Mildabus::Mildabus(PinName rx, PinName tx, bool master, uint8_t addr)
+Mildabus::Mildabus(PinName rx, PinName tx, bool master, uint8_t addr, bool debug)
 	:_master_mode(master)
 {
 	_can = new CAN(rx,tx);
@@ -51,6 +51,10 @@ Mildabus::Mildabus(PinName rx, PinName tx, bool master, uint8_t addr)
 	}else if(addr){
 		_address = addr;
 	}
+
+	if(debug){
+		_can->mode(CAN::SilentTest);
+	}
 }
 
 Mildabus::~Mildabus(){
@@ -59,6 +63,8 @@ Mildabus::~Mildabus(){
 }
 
 bool Mildabus::getConnected(void){
+
+	_can->reset();
 
 	// Setup the bare subscriptions
 	subscribe(callback(this, &Mildabus::_dcnf_handler), MB_Message::DCNF_TX);
@@ -80,8 +86,6 @@ bool Mildabus::getConnected(void){
 	_can->attach(callback(this, &Mildabus::_can_rx_handler), CAN::RxIrq); // Received
 	_can->attach(callback(this, &Mildabus::_can_tx_handler), CAN::TxIrq); // Transmitted or aborted
 	_can->attach(callback(this, &Mildabus::_can_wu_handler), CAN::WuIrq); // Wake Up
-
-	_can->reset();
 
 	return true;
 }
@@ -120,15 +124,31 @@ void Mildabus::raiseException(MB_Error::Type e){
 }
 
 bool Mildabus::send(MB_Message msg){
-	return true;
+	if(msg.mb_type == MB_Message::DCNF_RX || msg.mb_type == MB_Message::DCNF_TX){
+		msg.format = CANExtended;
+		msg.id = (msg.mb_type << 25) | (_device_id & DEVICE_ID_MASK);
+	}else{
+		msg.format = CANStandard;
+		msg.id = (msg.mb_type << 7) | (msg.to.id & NODE_ID_MASK);
+	}
+	_can->write(msg);
+}
+
+bool Mildabus::send(MB_Event::Type e, uint8_t to){
+	MB_Message msg;
+	msg.format = CANStandard;
+	msg.from = MB_Device(_address);
+	msg.to = MB_Device(to);
+	msg.mb_type = MB_Message::EVENT_TX;
+	msg.data[0] = e;
+	msg.len = 1;
+	return send(msg);
 }
 
 bool Mildabus::read(MB_Message& message, uint32_t handle){
-	// A MB_Message for the incomming data (true for incomming)
-	MB_Message msg;
 
-	if(!_can->read(msg, handle)) return false;
-	
+	if(!_can->read(message, handle)) return false;
+	message.parse();
 	return true;
 }
 
@@ -187,6 +207,7 @@ MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message&)> c, MB_Message::
 }
 
 void Mildabus::unsubscribe(MB_Subscription* sub){
+	if(!sub) return;
 	// remove the filter.
 	_remove_filter(sub->filter);
 	// Removing the pointer from the list
@@ -208,13 +229,15 @@ void Mildabus::unsubscribeAll(){
 bool Mildabus::_reserve_filter(MB_Filter& filter){
 	uint32_t handle = 0;
 	// Search for an empty filter register
-	while(handle < FILTER_BANKS && _filter_list[filter.handle].active != true){
+	while(handle < FILTER_BANKS && _filter_list[handle].active == true){
 		handle++;
 	}
 
+	filter.handle = handle;
 	// No filter bank available
 	if(handle == FILTER_BANKS) return false;
 	
+	// Something going wrong here
 	_can->filter(filter.id, filter.mask, filter.format, filter.handle);
 	_filter_list[filter.handle] = filter;
 	_filter_list[filter.handle].active = true;
@@ -252,22 +275,25 @@ uint32_t Mildabus::_build_id(MB_Message::Type t, uint8_t id){
 }
 
 void Mildabus::_handle_subscriptions(MB_Message& msg){
-	// Convert the message type to sub type
+
 	if(msg.type == MB_Message::NONE) return;
+	
+	MB_List_Iterator<MB_Subscription*> it;
+
 	// First do all the message specific subs
-	MB_List<MB_Subscription*>& l = _subscription_list[msg.type];
+	MB_List<MB_Subscription*>& l = _subscription_list[msg.mb_type];
 
 	// For each element in the list
-	for(MB_Subscription* el : l){
-		el->call(msg);
+	for(it = l.begin(); it != l.end(); it++){
+		(*it)->call(msg);
 	}
 
 	// For the "ALL" subscriptions
 	MB_List<MB_Subscription*>& all_l = _subscription_list[MB_Message::ALL];
 
 	// For each element in the list
-	for(MB_Subscription* el : all_l){
-		el->call(msg);
+	for(it = all_l.begin(); it != all_l.end(); it++){
+		(*it)->call(msg);
 	}
 }
 
@@ -280,7 +306,8 @@ bool Mildabus::_transmit_exceptions(void){
 
 void Mildabus::_can_rx_handler(void){
 	MB_Message message;
-
+	read(message, 0);
+	_handle_subscriptions(message);
 }
 
 void Mildabus::_can_tx_handler(void){
