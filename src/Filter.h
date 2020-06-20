@@ -9,7 +9,7 @@ struct MB_Filter{
     uint32_t handle = 0;
     CANFormat format = CANStandard;
 
-    bool active;
+    bool active = false;
     MB_Filter(){
     }
 
@@ -18,9 +18,13 @@ struct MB_Filter{
             MB_Filter(t, (uint8_t)d, extended);
             return;
         }
+        if(t != MB_Message::ALL){
+            mask = (0xF << 25);
+        }else{
+            mask = 0;
+        }
         // Only messages using extended ID
         id = (t << 25);
-        mask = (0xF << 25);
         format = CANExtended;
 
         if(d){
@@ -35,10 +39,14 @@ struct MB_Filter{
             MB_Filter(t, (uint32_t) i);
             return;
         }
-        
+
+        if(t != MB_Message::ALL){
+            mask = (0xf << 7);
+        }else{
+            mask = 0;
+        }
         // Normal IDs
         id = (t << 7);
-        mask = (0xF << 7);
         format = CANStandard;
 
         if(i){

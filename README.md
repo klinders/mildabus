@@ -14,21 +14,21 @@ The project is build upon Mbed-OS.
 #include <Mildabus.h>
 
 // Initialise the Mildabus
-Mildabus milda1(CAN1_RX, CAN1_TX, /* MASTER = */ false, /* ID = */ 0, /* TEST_MODE = */ true);
+Mildabus milda1(CAN1_RX, CAN1_TX, /* MASTER = */ true, /* ID = */ 0, /* TEST_MODE = */ true);
 
 // Event handler
 void event(MB_Message&);
 
 int main() {
 
-    bus1.getConnected();
+    milda1.getConnected();
     // Attach a handler to a specific event
-	bus1.subscribe(callback(&event), MB_Message::EVENT_TX, MB_Event::LIGHTS_ON);
+    milda1.subscribe(callback(&event), MB_Message::EVENT_TX, MB_Event::LIGHTS_ON);
 
 	while(1) {
 		// Send a message once a second.
 		wait_ms(1000);
-		bus1.send(MB_Event::LIGHTS_ON);
+		milda1.send(MB_Event::LIGHTS_ON);
 	}
 }
 

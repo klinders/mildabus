@@ -215,6 +215,13 @@ public:
 	/**
 	 * @brief Add subscription
 	 * 
+	 * @param sub MB_Subscription
+	 */
+	MB_Subscription* subscribe(const MB_Subscription& sub);
+
+	/**
+	 * @brief Add subscription
+	 * 
 	 * @param c     Callback
 	 * @param t     [Type of incomming message]
 	 * @param id    [Specific ID]

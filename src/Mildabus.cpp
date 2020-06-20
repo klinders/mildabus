@@ -65,6 +65,10 @@ Mildabus::~Mildabus(){
 bool Mildabus::getConnected(void){
 
 	_can->reset();
+	// Setup the interupt handlers
+	_can->attach(callback(this, &Mildabus::_can_rx_handler), CAN::RxIrq); // Received
+	_can->attach(callback(this, &Mildabus::_can_tx_handler), CAN::TxIrq); // Transmitted or aborted
+	_can->attach(callback(this, &Mildabus::_can_wu_handler), CAN::WuIrq); // Wake Up
 
 	// Setup the bare subscriptions
 	subscribe(callback(this, &Mildabus::_dcnf_handler), MB_Message::DCNF_TX);
@@ -81,11 +85,6 @@ bool Mildabus::getConnected(void){
 		subscribe(callback(this, &Mildabus::_nmt_handler), MB_Message::NMT, _address);
 		subscribe(callback(this, &Mildabus::_nmt_handler), MB_Message::TSTMP);
 	}
-	
-	// Setup the interupt handlers
-	_can->attach(callback(this, &Mildabus::_can_rx_handler), CAN::RxIrq); // Received
-	_can->attach(callback(this, &Mildabus::_can_tx_handler), CAN::TxIrq); // Transmitted or aborted
-	_can->attach(callback(this, &Mildabus::_can_wu_handler), CAN::WuIrq); // Wake Up
 
 	return true;
 }
@@ -152,58 +151,41 @@ bool Mildabus::read(MB_Message& message, uint32_t handle){
 	return true;
 }
 
+MB_Subscription* Mildabus::subscribe(const MB_Subscription& s){
+	// Save in the heap
+	MB_Subscription* sub = new MB_Subscription(s);
+	_subscription_list[sub->type].push_back(sub);
+
+	if(sub->type == MB_Message::DCNF_RX || sub->type == MB_Message::DCNF_TX){
+		if(!_master_mode){
+			sub->id_filter = _device_id;
+		}
+		MB_Filter filter(sub->type, sub->id_filter);
+		if(_reserve_filter(filter)) sub->filter = filter;
+	}else{
+		MB_Filter filter(sub->type, (uint8_t)sub->id_filter);
+		if(_reserve_filter(filter)) sub->filter = filter;
+	}
+	return sub;
+}
+
 MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message&)> c, MB_Message::Type sub_type, uint8_t id)
 {
-	// Be warned! This is going to the heap
-	MB_Subscription* subscription = new MB_Subscription(sub_type, MB_Error::NONE, MB_Event::NONE, id);
-	subscription->attach(c);
-	_subscription_list[sub_type].push_back(subscription);
-	if(sub_type == MB_Message::DCNF_RX || sub_type == MB_Message::DCNF_TX){
-		if(!_master_mode){
-			MB_Filter filter(sub_type, _device_id);
-			_reserve_filter(filter);
-			return subscription;
-		}
-	}
-	MB_Filter filter(sub_type, id);
-	_reserve_filter(filter);
-	return subscription;
-}
+	MB_Subscription tmp(sub_type, MB_Error::NONE, MB_Event::NONE, id);
+	tmp.attach(c);
+	return subscribe(tmp);}
 
 MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message&)> c, MB_Message::Type sub_type, MB_Event::Type e, uint8_t id)
 {
-	// Be warned! This is going to the heap
-	MB_Subscription* subscription = new MB_Subscription(sub_type, MB_Error::NONE, e, id);
-	subscription->attach(c);
-	_subscription_list[sub_type].push_back(subscription);
-	if(sub_type == MB_Message::DCNF_RX || sub_type == MB_Message::DCNF_TX){
-		if(!_master_mode){
-			MB_Filter filter(sub_type, _device_id);
-			_reserve_filter(filter);
-			return subscription;
-		}
-	}
-	MB_Filter filter(sub_type, id);
-	_reserve_filter(filter);
-	return subscription;
-}
+	MB_Subscription tmp(sub_type, MB_Error::NONE, e, id);
+	tmp.attach(c);
+	return subscribe(tmp);}
 
 MB_Subscription* Mildabus::subscribe(Callback<void(MB_Message&)> c, MB_Message::Type sub_type, MB_Error::Type e, uint8_t id)
 {
-	// Be warned! This is going to the heap
-	MB_Subscription* subscription = new MB_Subscription(sub_type, e, MB_Event::NONE, id);
-	subscription->attach(c);
-	_subscription_list[sub_type].push_back(subscription);
-	if(sub_type == MB_Message::DCNF_RX || sub_type == MB_Message::DCNF_TX){
-		if(!_master_mode){
-			MB_Filter filter(sub_type, _device_id);
-			_reserve_filter(filter);
-			return subscription;
-		}
-	}
-	MB_Filter filter(sub_type, id);
-	_reserve_filter(filter);
-	return subscription;
+	MB_Subscription tmp(sub_type, e, MB_Event::NONE, id);
+	tmp.attach(c);
+	return subscribe(tmp);
 }
 
 void Mildabus::unsubscribe(MB_Subscription* sub){
@@ -246,11 +228,12 @@ bool Mildabus::_reserve_filter(MB_Filter& filter){
 }
 
 void Mildabus::_remove_filter(MB_Filter& filter){
+	_can->filter(0, 0xFFFFFFFF, CANStandard,filter.handle);
 	// Reset by setting the mask to all ones. 
-	_can->filter(0, 0, CANStandard,filter.handle);
 	_filter_list[filter.handle].active = false;
 	_filter_list[filter.handle].mask = 0xFFFFFFFF;
 	_filter_list[filter.handle].id = 0;
+	
 }
 
 uint32_t Mildabus::_build_id(MB_Message::Type t, uint8_t id){
@@ -276,7 +259,7 @@ uint32_t Mildabus::_build_id(MB_Message::Type t, uint8_t id){
 
 void Mildabus::_handle_subscriptions(MB_Message& msg){
 
-	if(msg.type == MB_Message::NONE) return;
+	if(msg.mb_type == MB_Message::NONE) return;
 	
 	MB_List_Iterator<MB_Subscription*> it;
 
